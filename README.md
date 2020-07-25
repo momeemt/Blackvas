@@ -1,1 +1,2 @@
-HighCanvas
+# HighCanvas
+HighCanvasはHTML5 Canvas APIを扱いやすくしたライブラリです。Canvasに型・コンポーネント分割のシステムを導入して、Reactなどのように関数型的にビジュアルを扱うことが出来ます。
