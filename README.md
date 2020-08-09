@@ -1,2 +1,4 @@
 # HighCanvas
-HighCanvasはHTML5 Canvas APIを扱いやすくしたライブラリです。Canvasに型・コンポーネント分割のシステムを導入して、Reactなどのように関数型的にビジュアルを扱うことが出来ます。
+HighCanvasはHTML5 APIの一つであるCanvasAPIを、宣言的に扱えるように実装したライブラリです。
+従来のようにJavaScriptから命令的に実装していた冗長なコードを、よりスッキリと見やすいコードに整えることができます。
+また、CanvasのスタイルはCSSを作成して読み込むことで適応できるので、JavaScript DOMの知識は一切不要で、学習コストを軽減します。
