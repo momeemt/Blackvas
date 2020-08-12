@@ -1,4 +1,6 @@
-import types
+import macros
 
-proc initHighCanvas*(w: float, h: float): Canvas =
-  result = Canvas(width: w, height: h)
+
+macro init* (body: untyped): untyped =
+  result = newStmtList()
+  result.add body

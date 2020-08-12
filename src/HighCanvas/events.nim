@@ -1,5 +1,5 @@
 import macros
 import strformat
 
-macro events*(head, body: untyped): untyped =
+macro events*(body: untyped): untyped =
   discard
