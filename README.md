@@ -1,4 +1,13 @@
 # Blackvas
-HighCanvasはHTML5 APIの一つであるCanvasAPIを、宣言的に扱えるように実装したライブラリです。
-従来のようにJavaScriptから命令的に実装していた冗長なコードを、よりスッキリと見やすいコードに整えることができます。
-また、CanvasのスタイルはCSSを作成して読み込むことで適応できるので、JavaScript DOMの知識は一切不要で、学習コストを軽減します。
+![](blackvas.png)
+Blackvas is an easy-to-use Canvas API Library which can handle declaratively. We free you from cumbersome procedural JavaScript code. We aim to make the design easy to use for both designers with little programming experience and front-end engineers accustomed to things like Vue and React.
+
+## Dependent Technology
+- Nim  
+Blackvas is written by Nim-lang. Nim-lang is a statically typed programming language with a syntax similar to Python. It's probably very easy to learn.
+- CSS  
+Canvas graphics can be written with CSS properties that designers are familiar with.
+
+## The Concept of Blackvas
+
+### shapes
