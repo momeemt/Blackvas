@@ -48,4 +48,8 @@ proc fillText*(c: CanvasContext2d, txt: cstring, x, y: float) {.importcpp.}
 proc fill*(c: CanvasContext2d) {.importcpp.}
 proc rect*(c: CanvasContext2d, x: float, y: float, width: float, height: float) {.importcpp.}
 
+proc moveTo*(c: CanvasContext2d, x: float, y: float) {.importcpp.}
+
+proc lineTo*(c: CanvasContext2d, x: float, y: float) {.importcpp.}
+
 proc getContext2d*(c: Canvas): CanvasContext2d = {.emit: "`result` = `c`.getContext('2d');".}

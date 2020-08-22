@@ -1,4 +1,4 @@
-import macros, strformat
+import macros, strformat, types, math
 
 # 単なる区切りmacro
 macro shapes*(body: untyped): untyped =
@@ -66,7 +66,12 @@ proc getUserShapeMacro (macroName, body: NimNode): NimNode =
                           context.font = value
                         of "textAlign":
                           context.textAlign = value
-        result.add `shapeStructure`.parseStmt
+        result.add newNimNode(nnkBlockStmt).add(
+          ident("shapeScope"),
+          newStmtList(
+            `shapeStructure`.parseStmt
+          )
+        )
       for i in body:
         if i.len == 2:
           if $(i[0][0]) == "@":
@@ -100,11 +105,22 @@ macro text* (head: untyped): untyped =
     context.strokeText(`textStr`, `x`, `y`)
     context.fillText(`textStr`, `x`, `y`)
 
-macro rect* (head: untyped): untyped =
-  let x = intVal(head[0]).float
-  let y = intVal(head[1]).float
-  let width = intVal(head[2]).float
-  let height = intVal(head[3]).float
+macro rect* (x, y, width, height: untyped): untyped =
   result = quote do:
-    context.rect(`x`, `y`, `width`, `height`)
+    context.rect(`x`.float, `y`.float, `width`.float, `height`.float)
+    context.fill()
+
+macro triangle* (v1x, v1y, v2x, v2y, v3x, v3y: untyped): untyped =
+  result = quote do:
+    context.beginPath()
+    context.moveTo(`v1x`.float, `v1y`.float)
+    context.lineTo(`v2x`.float, `v2y`.float)
+    context.lineTo(`v3x`.float, `v3y`.float)
+    context.closePath()
+    context.fill()
+
+macro circle* (x, y, r: untyped): untyped =
+  result = quote do:
+    context.beginPath()
+    context.arc(`x`.float, `y`.float, `r`.float, 0, 2 * math.PI)
     context.fill()

@@ -1,11 +1,6 @@
 import macros
 
-# result 1
-  # import tables
-  # var blackvasStyleMap = initTable[string, initTable[string, string]()]()
 macro style*(body: untyped): untyped =
-  # echo treeRepr(body)
-
   result = newStmtList()
   result.add newNimNode(nnkImportStmt).add(
     ident("tables")
