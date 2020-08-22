@@ -1,5 +1,2 @@
-experiment
-experiment.js
-experiment.nim
-index.html
-handmade.js
+example/*/*.js
+.DS_Store
