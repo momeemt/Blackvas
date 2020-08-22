@@ -2,10 +2,13 @@ import dom
 
 type
   Canvas* = ref CanvasObj
+  
   CanvasObj {.importc.} = object of dom.Element
     width* : float
     height* : float
+  
   CanvasContext2d* = ref CanvasContext2dObj
+
   CanvasContext2dObj {.importc.} = object
     font*: cstring
     fillStyle* : cstring
@@ -16,7 +19,13 @@ type
     repeatX = "repeat-x",
     repeatY = "repeat-y",
     noRepeat = "no-repeat"
-
+  
+  Align* {.pure.} = enum
+    left,
+    right,
+    center,
+    start,
+    ends = "end"
 
 # methods
 proc arc*(c: CanvasContext2d, x: float, y: float, radius: float, startAngle: float, endAngle: float, anticlockwise: bool = false) {.importcpp.}
