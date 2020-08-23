@@ -1,4 +1,4 @@
-# Blackvas
+# Blackvas (En / [Ja](/README_ja.md))
 ![](blackvas.png)
 Blackvas is an easy-to-use Canvas API Library which can handle declaratively. We free you from cumbersome procedural JavaScript code. We aim to make the design easy to use for both designers with little programming experience and front-end engineers accustomed to things like Vue and React.
 
