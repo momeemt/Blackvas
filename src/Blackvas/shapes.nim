@@ -1,6 +1,5 @@
-import macros, strformat, types, math
+import macros, strformat, math
 
-# 単なる区切りmacro
 macro shapes*(body: untyped): untyped =
   result = body
 
@@ -40,10 +39,28 @@ proc getAddEventListenerLambda (eventName: string, procContent: NimNode): NimNod
 proc getUserShapeMacro (macroName, body: NimNode): NimNode =
   macroName.expectKind(nnkIdent)
   let shapeStructure = getUserShapeProc(macroName, body)
+  # shapeで利用するcontext名
+  let contextName = $macroName & "_context"
+
   result = quote do:
     import macros
-    macro `macroName`(body: untyped): untyped =
-      result = newStmtList()
+    macro `macroName`*(body: untyped): untyped =
+      result = newStmtList(
+        newNimNode(nnkVarSection, (
+          newIdentDefs(
+            newStrLitNode(`contextName`),
+            newEmptyNode(),
+            newCall(
+              newDotExpr(
+                ident("canvas"),
+                ident("getContext2d")
+              )
+            )
+          )
+        ))
+      )
+      dumpTree:
+        `contextName`.fillStyle = value
       for i in body:
         if i.len == 2:
           if $(i[0][0]) == "@":
@@ -55,23 +72,22 @@ proc getUserShapeMacro (macroName, body: NimNode): NimNode =
                   block scope:
                     let idKey = "@" & @@callProc
                     if blackvasStyleMap.hasKey(idKey):
-                      context.font = "24px Arial"
-                      context.fillStyle = "#000000"
-                      context.textAlign = "start"
                       for key, value in blackvasStyleMap[idKey]:
                         case key:
                         of "color":
-                          context.fillStyle = value
+                          ident(`contextName`).fillStyle = value
                         of "font":
-                          context.font = value
+                          `contextName`.font = value
                         of "textAlign":
-                          context.textAlign = value
-        result.add newNimNode(nnkBlockStmt).add(
-          ident("shapeScope"),
-          newStmtList(
-            `shapeStructure`.parseStmt
-          )
+                          `contextName`.textAlign = value
+      result.add newNimNode(nnkBlockStmt).add(
+        ident("shapeScope"),
+        newStmtList(
+          `shapeStructure`.parseStmt
         )
+      )
+      result.add quote do:
+        echo "shape output"
       for i in body:
         if i.len == 2:
           if $(i[0][0]) == "@":
@@ -90,7 +106,6 @@ proc getUserShapeMacro (macroName, body: NimNode): NimNode =
             of "focus":
               result.add getAddEventListenerLambda("focus") do:
                 newCall ( callProc )
-# ここで style で受け取ったスタイルを id/shape名 に分けて受け取る
 
 # ユーザー定義shapeを呼び出すためのmacroとprocを返すmacro
 macro shape*(head: untyped, body: untyped): untyped =
