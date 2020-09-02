@@ -39,28 +39,13 @@ proc getAddEventListenerLambda (eventName: string, procContent: NimNode): NimNod
 proc getUserShapeMacro (macroName, body: NimNode): NimNode =
   macroName.expectKind(nnkIdent)
   let shapeStructure = getUserShapeProc(macroName, body)
-  # shapeで利用するcontext名
-  let contextName = $macroName & "_context"
-
   result = quote do:
     import macros
     macro `macroName`*(body: untyped): untyped =
-      result = newStmtList(
-        newNimNode(nnkVarSection, (
-          newIdentDefs(
-            newStrLitNode(`contextName`),
-            newEmptyNode(),
-            newCall(
-              newDotExpr(
-                ident("canvas"),
-                ident("getContext2d")
-              )
-            )
-          )
-        ))
-      )
-      dumpTree:
-        `contextName`.fillStyle = value
+      result = quote do:
+        context.font = "24px Arial"
+        context.fillStyle = "#000000"
+        context.textAlign = "start"
       for i in body:
         if i.len == 2:
           if $(i[0][0]) == "@":
@@ -68,26 +53,27 @@ proc getUserShapeMacro (macroName, body: NimNode): NimNode =
             let callProc = $(i[1])
             case eventType:
               of "id":
+                # ここから下は JavaScript になる
                 result.add quote("@@") do:
                   block scope:
                     let idKey = "@" & @@callProc
                     if blackvasStyleMap.hasKey(idKey):
                       for key, value in blackvasStyleMap[idKey]:
+                        echo idKey
+                        echo key, value
                         case key:
                         of "color":
-                          ident(`contextName`).fillStyle = value
+                          context.fillStyle = value
                         of "font":
-                          `contextName`.font = value
+                          context.font = value
                         of "textAlign":
-                          `contextName`.textAlign = value
+                          context.textAlign = value
       result.add newNimNode(nnkBlockStmt).add(
         ident("shapeScope"),
         newStmtList(
           `shapeStructure`.parseStmt
         )
       )
-      result.add quote do:
-        echo "shape output"
       for i in body:
         if i.len == 2:
           if $(i[0][0]) == "@":
@@ -122,6 +108,7 @@ macro text* (head: untyped): untyped =
 
 macro rect* (x, y, width, height: untyped): untyped =
   result = quote do:
+    context.beginPath()
     context.rect(`x`.float, `y`.float, `width`.float, `height`.float)
     context.fill()
 
@@ -131,7 +118,6 @@ macro triangle* (v1x, v1y, v2x, v2y, v3x, v3y: untyped): untyped =
     context.moveTo(`v1x`.float, `v1y`.float)
     context.lineTo(`v2x`.float, `v2y`.float)
     context.lineTo(`v3x`.float, `v3y`.float)
-    context.closePath()
     context.fill()
 
 macro circle* (x, y, r: untyped): untyped =
