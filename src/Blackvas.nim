@@ -1,4 +1,4 @@
-include Blackvas/[types, settings, shapes, view, events, methods, canvas, initialize, data, color, style]
+include Blackvas/[settings, shapes, view, methods, canvas, data, color, style]
 
 proc add*(x, y: int): int =
   ## Adds two files together.
