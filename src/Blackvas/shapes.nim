@@ -1,102 +1,166 @@
-import macros, strformat, math
+import macros, strformat
 
-macro shapes*(body: untyped): untyped =
-  result = body
+# Forward declaration
+proc getNoArgumentShapeMacro (macroName, body: NimNode): NimNode
+proc getOnlyBodyShapeMacro (macroName, body: NimNode): NimNode
+proc getHeadAndBodyShapeMacro (macroName, body: NimNode): NimNode
+proc getShape (body: NimNode): string
+# End
 
-proc getUserShapeProc (name, body: NimNode): string =
-  var nodeStr = ""
-  for i in body:
-    nodeStr &= fmt"{repr(i)}" & "\n"
-  result = nodeStr
-
-proc getAddEventListenerLambda (eventName: string, procContent: NimNode): NimNode =
-  result = newCall(
-    newDotExpr(
-      ident("canvas"),
-      ident("addEventListener")
-    ),
-    newStrLitNode(eventName),
-    newNimNode(nnkLambda).add(
-      newEmptyNode(),
-      newEmptyNode(),
-      newEmptyNode(),
-      newNimNode(nnkFormalParams).add(
-        newEmptyNode(),
-        newIdentDefs(
-          ident("event"),
-          ident("Event"),
-          newEmptyNode()
-        )
-      ),
-      newEmptyNode(),
-      newEmptyNode(),
-      newStmtList(
-        copyNimTree(procContent)
-      )
-    )
-  )
-
-proc getUserShapeMacro (macroName, body: NimNode): NimNode =
-  macroName.expectKind(nnkIdent)
-  let shapeStructure = getUserShapeProc(macroName, body)
-  result = quote do:
-    import macros
-    macro `macroName`*(body: untyped): untyped =
+macro shapes* (body: untyped): untyped =
+  result = newStmtList()
+  result.add quote do:
+    proc getResetShapeStyle (): NimNode =
       result = quote do:
         context.font = "24px Arial"
         context.fillStyle = "#000000"
         context.textAlign = "start"
-      for i in body:
-        if i.len == 2:
-          if $(i[0][0]) == "@":
-            let eventType = $(i[0][1])
-            let callProc = $(i[1])
-            case eventType:
-              of "id":
-                # ここから下は JavaScript になる
-                result.add quote("@@") do:
-                  block scope:
-                    let idKey = "@" & @@callProc
-                    if blackvasStyleMap.hasKey(idKey):
-                      for key, value in blackvasStyleMap[idKey]:
-                        echo idKey
-                        echo key, value
-                        case key:
-                        of "color":
-                          context.fillStyle = value
-                        of "font":
-                          context.font = value
-                        of "textAlign":
-                          context.textAlign = value
-      result.add newNimNode(nnkBlockStmt).add(
-        ident("shapeScope"),
+    
+    import macros
+    proc getShapeProcNimNode (shape: string): NimNode =
+      result = newNimNode(nnkBlockStmt).add(
+        ident("shapeProcBlock"),
         newStmtList(
-          `shapeStructure`.parseStmt
+          shape.parseStmt
         )
       )
-      for i in body:
-        if i.len == 2:
-          if $(i[0][0]) == "@":
-            let eventType = $(i[0][1])
-            let callProc = $(i[1])
-            case eventType:
-            of "click":
-              result.add getAddEventListenerLambda("click") do:
-                newCall( callProc )
-            of "mousedown":
-              result.add getAddEventListenerLambda("mousedown") do:
-                newCall ( callProc )
-            of "mouseup":
-              result.add getAddEventListenerLambda("mouseup") do:
-                newCall ( callProc )
-            of "focus":
-              result.add getAddEventListenerLambda("focus") do:
-                newCall ( callProc )
+    
+    type Rect = object
+      x1: int
+      y1: int
+      x2: int
+      y2: int
+    
+    proc getAddListenerClickEvent (procedureName: NimNode, shape: string): NimNode =
+      let shapeNimNode = shape.parseStmt
+      var devideShapes: seq[Rect] = @[]
+      for sentence in shapeNimNode:
+        if sentence[0].repr == "rect":
+          devideShapes.add Rect(
+            x1: sentence[1].intVal.int,
+            y1: sentence[2].intVal.int,
+            x2: sentence[1].intVal.int + sentence[3].intVal.int,
+            y2: sentence[2].intVal.int + sentence[4].intVal.int
+          )
+      result = quote("@@") do:
+        canvas.addEventListener("click",
+          proc (event: Event) =
+            let
+              canvasRect = canvas.getBoundingClientRect()
+              basePointX = event.clientX - canvasRect.left.int
+              basePointY = event.clientY - canvasRect.top.int
+            var isClick = false
+            for devideShape in @@devideShapes:
+              let intoCond1 = devideShape.x1 <= basePointX and devideShape.y1 <= basePointY
+              let intoCond2 = devideShape.x2 >= basePointX and devideShape.y2 >= basePointY
+              if intoCond1 and intoCond2:
+                isClick = true
+            if isClick:
+              @@procedureName()
+        )
 
-# ユーザー定義shapeを呼び出すためのmacroとprocを返すmacro
-macro shape*(head: untyped, body: untyped): untyped =
+    proc getStyleByAttribute (attributeName, attributeValue: string): NimNode =
+      result = quote("@@") do:
+        block shapeScope:
+          var key = ""
+          key = "@" & @@attributeValue
+          # if @@attributeName == "id":
+          #   key = "#" & @@attributeValue
+          # elif @@attributeName == "class":
+          #   key = "." & @@attributeValue
+          if blackvasStyleMap.hasKey(key):
+            for styleKey, styleValue in blackvasStyleMap[key]:
+              case styleKey:
+              of "color":
+                context.fillStyle = styleValue
+              of "font":
+                context.font = styleValue
+              of "textAlign":
+                context.textAlign = styleValue
+  result.add body
+
+macro shape* (head: untyped, body: untyped): untyped =
   result = newStmtList()
-  result.add(getUserShapeMacro(head, body))
+  result.add getNoArgumentShapeMacro(head, body)
+  result.add getOnlyBodyShapeMacro(head, body)
+  result.add getHeadAndBodyShapeMacro(head, body)
+
+proc getNoArgumentShapeMacro (macroName, body: NimNode): NimNode =
+  macroName.expectKind(nnkIdent)
+  let shape = getShape(body)
+  result = quote do:
+    import macros
+    macro `macroName`* () =
+      result = getResetShapeStyle()
+      result.add getShapeProcNimNode(`shape`)
+
+proc getOnlyBodyShapeMacro (macroName, body: NimNode): NimNode =
+  macroName.expectKind(nnkIdent)
+  let shape = getShape(body)
+  result = quote do:
+    import macros
+    macro `macroName`* (body: untyped) =
+      result = getResetShapeStyle()
+      for sentence in body:
+        expectLen(sentence, 2)
+        let sentenceKind = sentence[0].kind
+        if sentenceKind == nnkPrefix:
+          let eventNameUntype = sentence[0][1]
+          let eventName = repr eventNameUntype
+          let procedureNameUntype = sentence[1]
+          case eventName:
+          of "click":
+            result.add getAddListenerClickEvent(procedureNameUntype, `shape`)
+          else:
+            discard
+        elif sentenceKind == nnkIdent:
+          let attributeName = sentence[0].repr
+          let attributeValueKind = sentence[1].kind
+          let attributeValue = sentence[1].repr
+          if attributeValueKind == nnkStrLit:
+            if attributeName == "class" or attributeName == "id":
+              var trimmedAttributeValue = attributeValue[1..attributeValue.len-2]
+              result.add getStyleByAttribute(attributeName, trimmedAttributeValue)
+            else:
+              error("Undefined attributes", sentence[0])
+          elif attributeValueKind == nnkIdent:
+            let attributeValueNimNode = sentence[1]
+            result.add quote("@@") do:
+              let attributeValue = $(@@attributeValueNimNode)
+              block shapeScope:
+                var key = ""
+                key = "@" & attributeValue
+                # if @@attributeName == "id":
+                #   key = "#" & @@attributeValue
+                # elif @@attributeName == "class":
+                #   key = "." & @@attributeValue
+                if blackvasStyleMap.hasKey(key):
+                  for styleKey, styleValue in blackvasStyleMap[key]:
+                    case styleKey:
+                    of "color":
+                      context.fillStyle = styleValue
+                    of "font":
+                      context.font = styleValue
+                    of "textAlign":
+                      context.textAlign = styleValue
+          else:
+            error("Undefined attributes", sentence[0])
+        else:
+          error("Unrecognized Events: ", sentence[0])
+      result.add getShapeProcNimNode(`shape`)
+
+proc getHeadAndBodyShapeMacro (macroName, body: NimNode): NimNode =
+  macroName.expectKind(nnkIdent)
+  let shape = getShape(body)
+  result = quote do:
+    import macros
+    macro `macroName`* (head, body: untyped) =
+      echo `shape`
+
+proc getShape (body: NimNode): string =
+  result = ""
+  for sentence in body:
+    result &= fmt"{repr(sentence)}" & "\n"
 
 macro text* (head: untyped): untyped =
   let textStr = $head[0]

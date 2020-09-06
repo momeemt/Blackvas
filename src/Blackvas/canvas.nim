@@ -1,11 +1,54 @@
 import dom
 
 type
+  Event* = ref EventObj
+  EventObj {.importc.} = object of RootObj
+    target*: Node
+    altKey*, ctrlKey*, shiftKey*: bool
+    button*: int
+    clientX*, clientY*: int
+    keyCode*: int
+    layerX*, layerY*: int
+    modifiers*: int
+    ALT_MASK*, CONTROL_MASK*, SHIFT_MASK*, META_MASK*: int
+    offsetX*, offsetY*: int
+    pageX*, pageY*: int
+    screenX*, screenY*: int
+    which*: int
+    `type`*: cstring
+    x*, y*: int
+    ABORT*: int
+    BLUR*: int
+    CHANGE*: int
+    CLICK*: int
+    DBLCLICK*: int
+    DRAGDROP*: int
+    ERROR*: int
+    FOCUS*: int
+    KEYDOWN*: int
+    KEYPRESS*: int
+    KEYUP*: int
+    LOAD*: int
+    MOUSEDOWN*: int
+    MOUSEMOVE*: int
+    MOUSEOUT*: int
+    MOUSEOVER*: int
+    MOUSEUP*: int
+    MOVE*: int
+    RESET*: int
+    RESIZE*: int
+    SELECT*: int
+    SUBMIT*: int
+    UNLOAD*: int
+
   Canvas* = ref CanvasObj
   
   CanvasObj {.importc.} = object of dom.Element
     width* : float
     height* : float
+
+  BoundingRect* {.importc.} = object
+    top*, bottom*, left*, right*, x*, y*, width*, height*: float
   
   CanvasContext2d* = ref CanvasContext2dObj
 
@@ -28,6 +71,9 @@ type
     ends = "end"
 
 # methods
+proc addEventListener*(et: Canvas, ev: cstring, cb: proc(ev: Event), useCapture: bool = false) {.importcpp.}
+proc addEventListener*(et: Window, ev: cstring, cb: proc(ev: Event), useCapture: bool = false) {.importcpp.}
+
 proc arc*(c: CanvasContext2d, x: float, y: float, radius: float, startAngle: float, endAngle: float, anticlockwise: bool = false) {.importcpp.}
 proc arcTo*(c: CanvasContext2d, x1: float, y1: float, x2: float, y2: float, radius: float) {.importcpp.}
 proc beginPath*(c: CanvasContext2d) {.importcpp.}
@@ -47,9 +93,11 @@ proc strokeText*(c: CanvasContext2d, txt: cstring, x, y: float) {.importcpp.}
 proc fillText*(c: CanvasContext2d, txt: cstring, x, y: float) {.importcpp.}
 proc fill*(c: CanvasContext2d) {.importcpp.}
 proc rect*(c: CanvasContext2d, x: float, y: float, width: float, height: float) {.importcpp.}
+proc fillRect*(c: CanvasContext2d, x: float, y: float, width: float, height: float) {.importcpp.}
 
 proc moveTo*(c: CanvasContext2d, x: float, y: float) {.importcpp.}
 
 proc lineTo*(c: CanvasContext2d, x: float, y: float) {.importcpp.}
 
 proc getContext2d*(c: Canvas): CanvasContext2d = {.emit: "`result` = `c`.getContext('2d');".}
+proc getBoundingClientRect*(c: Canvas): BoundingRect {.importcpp.}
