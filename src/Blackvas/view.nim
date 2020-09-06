@@ -1,146 +1,71 @@
 ## view.nim
 ## 
 ## canvasグラフィックスをDOMに適用するための機能を提供します。
+## 
+## shapeで仮想DOMに出力する？
+## viewでも仮想DOMに出力する
+## updateで ことあるごとに redraw する？
 
 import macros
 
-macro view*(body: untyped): untyped =
-  ## DOM要素にグラフィックスを適用します。
+proc getDrawCanvasProc(body: NimNode): NimNode
+
+macro update*(body: untyped): untyped =
   # result = quote do:
-  #   import dom
-  #   proc onLoad (e: dom.Event) =
-  #     let blackvas = document.getElementById("Blackvas")
-  #     var canvas = dom.document.createElement("canvas").Canvas
-  #     canvas.id = Blackvas.canvasId
-  #     canvas.height = Blackvas.height
-  #     canvas.width = Blackvas.width
-  #     blackvas.appendChild(canvas)
-  #     var context = canvas.getContext2d()
-  #   window.onload = onLoad
-  # echo treeRepr(result)
-  result = newStmtList()
-  result.add(
-    newNimNode(nnkImportStmt).add(
-      ident("dom")
-    ),
-    newNimNode(nnkProcDef).add(
-      ident("onLoad"),
+  #   context.clearRect(0, 0, canvas.width, canvas.height)
+  result = getDrawCanvasProc(body)
+  result.add quote do:
+    echo "?"
+    drawCanvasProc()
+
+macro view*(body: untyped): untyped =
+  result = getDrawCanvasProc(body)
+  # result.add quote do:
+  #   window.onload = drawCanvasProc
+
+proc getDrawCanvasProc(body: NimNode): NimNode =
+  ## DOM要素にグラフィックスを適用します。
+  result = quote do:
+    proc insertViewBody(canvas: Canvas, context: CanvasContext2d) {.importc.}
+    proc drawCanvasProc () =
+      let blackvas = document.getElementById("Blackvas")
+      var canvas = dom.document.createElement("canvas").Canvas
+      canvas.id = Blackvas.canvasId
+      canvas.height = Blackvas.height
+      canvas.width = Blackvas.width
+      blackvas.appendChild(canvas)
+      var context = canvas.getContext2d()
+      insertViewBody(canvas, context)
+      echo "end-insertViewBody"
+
+  ## 以下のASTツリーは次のようなコードを展開する。
+  ## proc insertViewBody (canvas: Canvas, context: CanvasContext2d) {.exportc.} =
+  ##   { body } ## bodyは getDrawCanvasProc で受け取る body
+  ## shapesマクロで定義された描画情報をもとに描画する関数 insertViewBody を返す
+  result.add nnkStmtList.newTree(
+    nnkProcDef.newTree(
+      newIdentNode("insertViewBody"),
       newEmptyNode(),
       newEmptyNode(),
-      newNimNode(nnkFormalParams).add(
+      nnkFormalParams.newTree(
         newEmptyNode(),
-        newNimNode(nnkIdentDefs).add(
-          ident("e"),
-          newDotExpr(
-            ident("dom"),
-            ident("Event")
-          ),
+        nnkIdentDefs.newTree(
+          newIdentNode("canvas"),
+          newIdentNode("Canvas"),
+          newEmptyNode()
+        ),
+        nnkIdentDefs.newTree(
+          newIdentNode("context"),
+          newIdentNode("CanvasContext2d"),
           newEmptyNode()
         )
       ),
+      nnkPragma.newTree(
+        newIdentNode("exportc")
+      ),
       newEmptyNode(),
-      newEmptyNode(),
-      newStmtList(
-        newNimNode(nnkCommand).add(
-          ident("echo"),
-          newStrLitNode("Hello, Blackvas :)")
-        ),
-        newNimNode(nnkVarSection).add(
-          newNimNode(nnkIdentDefs).add(
-            ident("blackvas"),
-            newEmptyNode(),
-            newNimNode(nnkCall).add(
-              newDotExpr(
-                newDotExpr(
-                  ident("dom"),
-                  ident("document")
-                ),
-                ident("getElementById")
-              ),
-              newStrLitNode("Blackvas")
-            )
-          )
-        ),
-        newNimNode(nnkVarSection).add(
-          newIdentDefs(
-            newIdentNode("canvas"),
-            newEmptyNode(),
-            newDotExpr(
-              newCall(
-                newDotExpr(
-                  newDotExpr(
-                    newIdentNode("dom"),
-                    newIdentNode("document")
-                  ),
-                  newIdentNode("createElement")
-                ),
-                newStrLitNode("canvas")
-              ),
-              newIdentNode("Canvas")
-            )
-          )
-        ),
-        newAssignment(
-          newDotExpr(
-            ident("canvas"),
-            ident("id")
-          ),
-          newDotExpr(
-            ident("Blackvas"),
-            ident("canvasId")
-          )
-        ),
-        newAssignment(
-          newDotExpr(
-            ident("canvas"),
-            ident("height")
-          ),
-          newDotExpr(
-            ident("Blackvas"),
-            ident("height")
-          )
-        ),
-        newAssignment(
-          newDotExpr(
-            ident("canvas"),
-            ident("width")
-          ),
-          newDotExpr(
-            ident("Blackvas"),
-            ident("width")
-          )
-        ),
-        newCall(
-          newDotExpr(
-            ident("blackvas"),
-            ident("appendChild")
-          ),
-          ident("canvas")
-        ),
-        newNimNode(nnkVarSection).add(
-          newIdentDefs(
-            newIdentNode("context"),
-            newEmptyNode(),
-            newCall(
-              newDotExpr(
-                newIdentNode("canvas"),
-                newIdentNode("getContext2d")
-              )
-            )
-          )
-        ),
+      nnkStmtList.newTree(
         copyNimTree(body)
-      )
-    )
-  )
-  result.add(
-    newStmtList(
-      newAssignment(
-        newDotExpr(
-          ident("window"),
-          ident("onload")
-        ),
-        ident("onLoad")
       )
     )
   )
