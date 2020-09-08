@@ -1,4 +1,4 @@
-import macros, strformat
+import macros, strformat, json
 
 # Forward declaration
 proc getNoArgumentShapeMacro (macroName, body: NimNode): NimNode
@@ -12,9 +12,8 @@ macro shapes* (body: untyped): untyped =
   result.add quote do:
     proc getResetShapeStyle (): NimNode =
       result = quote do:
-        context.font = "24px Arial"
-        context.fillStyle = "#000000"
-        context.textAlign = "start"
+        var resetStyleJson = %* { "func": "style_reset" }
+        virtualCanvas["virtual_canvas"].add(resetStyleJson)
     
     import macros
     proc getShapeProcNimNode (shape: string): NimNode =
@@ -43,21 +42,21 @@ macro shapes* (body: untyped): untyped =
             y2: sentence[2].intVal.int + sentence[4].intVal.int
           )
       result = quote("@@") do:
-        canvas.addEventListener("click",
-          proc (event: Event) =
-            let
-              canvasRect = canvas.getBoundingClientRect()
-              basePointX = event.clientX - canvasRect.left.int
-              basePointY = event.clientY - canvasRect.top.int
-            var isClick = false
-            for devideShape in @@devideShapes:
-              let intoCond1 = devideShape.x1 <= basePointX and devideShape.y1 <= basePointY
-              let intoCond2 = devideShape.x2 >= basePointX and devideShape.y2 >= basePointY
-              if intoCond1 and intoCond2:
-                isClick = true
-            if isClick:
-              @@procedureName()
-        )
+        var clickEventJson = %* { "event": "click", "proc": "testClickProc" }
+        virtualCanvas["events"].add(clickEventJson)
+        proc testClickProc (canvas: Canvas, event: Event) =
+          let
+            canvasRect = canvas.getBoundingClientRect()
+            basePointX = event.clientX - canvasRect.left.int
+            basePointY = event.clientY - canvasRect.top.int
+          var isClick = false
+          for devideShape in @@devideShapes:
+            let intoCond1 = devideShape.x1 <= basePointX and devideShape.y1 <= basePointY
+            let intoCond2 = devideShape.x2 >= basePointX and devideShape.y2 >= basePointY
+            if intoCond1 and intoCond2:
+              isClick = true
+          if isClick:
+            @@procedureName()
 
     proc getStyleByAttribute (attributeName, attributeValue: string): NimNode =
       result = quote("@@") do:
@@ -72,11 +71,17 @@ macro shapes* (body: untyped): untyped =
             for styleKey, styleValue in blackvasStyleMap[key]:
               case styleKey:
               of "color":
-                context.fillStyle = styleValue
+                # context.fillStyle = styleValue
+                var styleJson = %* { "func": "style_color", "color": styleValue }
+                virtualCanvas["virtual_canvas"].add(styleJson)
               of "font":
-                context.font = styleValue
+                # context.font = styleValue
+                var styleJson = %* { "func": "style_font", "font": styleValue }
+                virtualCanvas["virtual_canvas"].add(styleJson)
               of "textAlign":
-                context.textAlign = styleValue
+                # context.textAlign = styleValue
+                var styleJson = %* { "func": "style_text_align", "font": styleValue }
+                virtualCanvas["virtual_canvas"].add(styleJson)
   result.add body
 
 macro shape* (head: untyped, body: untyped): untyped =
@@ -138,11 +143,14 @@ proc getOnlyBodyShapeMacro (macroName, body: NimNode): NimNode =
                   for styleKey, styleValue in blackvasStyleMap[key]:
                     case styleKey:
                     of "color":
-                      context.fillStyle = styleValue
+                      var styleJson = %* { "func": "style_color", "color": styleValue }
+                      virtualCanvas["virtual_canvas"].add(styleJson)
                     of "font":
-                      context.font = styleValue
+                      var styleJson = %* { "func": "style_font", "font": styleValue }
+                      virtualCanvas["virtual_canvas"].add(styleJson)
                     of "textAlign":
-                      context.textAlign = styleValue
+                      var styleJson = %* { "func": "style_text_align", "font": styleValue }
+                      virtualCanvas["virtual_canvas"].add(styleJson)
           else:
             error("Undefined attributes", sentence[0])
         else:
@@ -167,25 +175,28 @@ macro text* (head: untyped): untyped =
   let x = intVal(head[1]).float
   let y = intVal(head[2]).float
   result = quote do:
-    context.strokeText(`textStr`, `x`, `y`)
-    context.fillText(`textStr`, `x`, `y`)
+    var textJson = %* { "func": "text", "value": `textStr`, "x": `x`, "y": `y` }
+    virtualCanvas["virtual_canvas"].add
 
-macro rect* (x, y, width, height: untyped): untyped =
-  result = quote do:
-    context.beginPath()
-    context.rect(`x`.float, `y`.float, `width`.float, `height`.float)
-    context.fill()
+
+template rect* (x, y, width, height: untyped): untyped =
+  var rectJson = %* { "func": "rect", "x": `x`, "y": `y`, "width": `width`, "height": `height` }
+  virtualCanvas["virtual_canvas"].add(rectJson)
 
 macro triangle* (v1x, v1y, v2x, v2y, v3x, v3y: untyped): untyped =
   result = quote do:
-    context.beginPath()
-    context.moveTo(`v1x`.float, `v1y`.float)
-    context.lineTo(`v2x`.float, `v2y`.float)
-    context.lineTo(`v3x`.float, `v3y`.float)
-    context.fill()
+    var triabgleJson = %* {
+      "func": "triangle",
+      "v1x": `v1x`,
+      "v1y": `v1y`,
+      "v2x": `v2x`,
+      "v2y": `v2y`,
+      "v3x": `v3x`,
+      "v3y": `v3y`
+    }
+    virtualCanvas["virtual_canvas"].add(triangleJson)
 
 macro circle* (x, y, r: untyped): untyped =
   result = quote do:
-    context.beginPath()
-    context.arc(`x`.float, `y`.float, `r`.float, 0, 2 * math.PI)
-    context.fill()
+    var circleJson = %* { "func": "circle", "x": `x`, "y": `y`, "r": `r` }
+    virtualCanvas["virtual_canvas"].add(circleJson)
