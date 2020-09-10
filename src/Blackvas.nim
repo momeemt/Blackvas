@@ -1,43 +1,20 @@
 include Blackvas/[settings, view, methods, canvas, data, color, style, shapes]
 
 macro Blackvas*(body: untyped): untyped =
-  result = quote do:
-    import dom, json, macros
-    # canvasの描画情報
-    # Forward declaration
-    # ここで viewなどが吐き出す関数のforward宣言を先にしておく
-    # proc drawCanvasProc ()
-    # End
   result = """
-import dom, json, macros, strutils, math
-var virtualCanvas = %* { "virtual_canvas": [], "events": [] }
-proc hogehoge () = echo "hoge"
-macro invoke(name, canvas, event: typed): untyped =
-  result = nnkStmtList.newTree(
-    nnkCall.newTree(
-      newIdentNode(name.strVal),
-      canvas,
-      event
-    )
-  )
-  # result = quote do:
-  #   echo repr `canvas`
-  #   echo repr `event`
-  #   # `name`(`canvas`, `event`)
-  #   hogehoge(10)
+import json, strutils, math, dom, tables
+var
+  canvas*: Canvas
+  context*: CanvasContext2d
+  globalEvent*: Blackvas.Event
+  virtualCanvas* = %* { "virtual_canvas": {}, "shapes": {}, "styles": {} }
 """.parseStmt
-  result.add body
   result.add quote do:
-    proc draw (context: CanvasContext2d) =
-      let virtualCanvasArray = virtualCanvas["virtual_canvas"]
-      for obj in virtualCanvasArray:
+    proc drawShape (context: CanvasContext2d, shapesArr: JsonNode) =
+      for obj in shapesArr:
         let rawObjFunc = obj["func"].pretty
         let objFunc = rawObjFunc[1..rawObjFunc.len-2]
         case objFunc:
-        of "style_reset":
-          context.font = "24px Arial"
-          context.fillStyle = "#000000"
-          context.textAlign = "start"
         of "style_color":
           let
             rawColor = obj["color"].pretty
@@ -81,39 +58,58 @@ macro invoke(name, canvas, event: typed): untyped =
           context.beginPath()
           context.arc(x, y, r, 0, 2 * math.PI)
           context.fill()
+
+    proc draw (context: CanvasContext2d) =
+      context.clearRect(0, 0, canvas.width, canvas.height)
+      let virtualCanvasObjects = virtualCanvas["virtual_canvas"]
+      let shapesObjects = virtualCanvas["shapes"]
+      let styleObjects = virtualCanvas["styles"]
+      for item in virtualCanvasObjects.pairs:
+        if not item.val.hasKey("shape"):
+          continue
+        let
+          rawShapeName = item.val["shape"].pretty
+          shapeName = rawShapeName[1..rawShapeName.len-2]
+        var
+          rawIdName = ""
+          rawClassName = ""
+          idName = ""
+          className = ""
+        if item.val.hasKey("id"):
+          rawIdName = item.val["id"].pretty
+          idName = "#" & rawIdName[1..rawIdName.len-2]
+        context.font = "24px Arial"
+        context.fillStyle = "#000000"
+        context.textAlign = "start"
+        let shapeArray = shapesObjects[shapeName]
+        let styleArrayById = styleObjects[idName]
+        for obj in styleArrayById:
+          let
+            rawStyle = obj["style"].pretty
+            style = rawStyle[1..rawStyle.len-2]
+            rawValue = obj["value"].pretty
+            value = rawValue[1..rawValue.len-2]
+          case style:
+          of "color":
+            context.fillStyle = value
+        drawShape(context, shapeArray)
+
     window.addEventListener("load",
       proc (event: Event) =
-        let blackvas = document.getElementById("Blackvas")
-        var canvas = dom.document.createElement("canvas").Canvas
-        canvas.id = "myCanvas"
-        canvas.height = 1000
-        canvas.width = 1000
-        blackvas.appendChild(canvas)
-        var context = canvas.getContext2d()
+        if document.getElementById("myCanvas") == nil:
+          let blackvas = document.getElementById("Blackvas")
+          canvas = dom.document.createElement("canvas").Canvas
+          canvas.id = "myCanvas"
+          canvas.height = 1000
+          canvas.width = 1000
+          blackvas.appendChild(canvas)
+        else:
+          canvas = document.getElementById("myCanvas").Canvas
+        
+        context = canvas.getContext2d()
 
-        let eventsArray = virtualCanvas["events"]
-        for obj in eventsArray:
-          let
-            rawEventType = obj["event"].pretty
-            eventType = rawEventType[1..rawEventType.len-2]
-            rawProcName = obj["proc"].pretty
-            procName = rawProcName[1..rawProcName.len-2]
-          echo eventType, " ", procName
-          case eventType:
-          of "click":
-            canvas.addEventListener("click", 
-              proc (event: Event) =
-                invoke(procName, canvas, event)
-            )
+        echo pretty virtualCanvas
+        draw(context)
         echo "Hello, Blackvas ;)"
-        draw(context)
     )
-    window.addEventListener("click",
-      proc (event: Event) =
-        let canvas = document.getElementById("myCanvas").Canvas
-        var context = canvas.getContext2d()
-        echo "update!"
-        var textJson = %* { "func": "text", "value": "updated!", "x": 300.0, "y": 300.0 }
-        virtualCanvas["virtual_canvas"].add(textJson)
-        draw(context)
-    )
+  result.add body
