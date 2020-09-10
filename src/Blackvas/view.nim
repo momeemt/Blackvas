@@ -4,7 +4,6 @@
 ## 
 ## shapeで仮想DOMに出力する？
 ## viewでも仮想DOMに出力する
-## updateで ことあるごとに redraw する？
 
 import macros
 
@@ -12,14 +11,14 @@ proc getDrawCanvasProc(body: NimNode): NimNode
 
 macro update*(body: untyped): untyped =
   # result = quote do:
-  #   context.clearRect(0, 0, canvas.width, canvas.height)
+  #   # context.clearRect(0, 0, canvas.width, canvas.height)
   result = getDrawCanvasProc(body)
   result.add quote do:
-    echo "?"
     drawCanvasProc()
 
 macro view*(body: untyped): untyped =
-  result = getDrawCanvasProc(body)
+  # result = getDrawCanvasProc(body)
+  result = body
   # result.add quote do:
   #   window.onload = drawCanvasProc
 
@@ -36,7 +35,6 @@ proc getDrawCanvasProc(body: NimNode): NimNode =
       blackvas.appendChild(canvas)
       var context = canvas.getContext2d()
       insertViewBody(canvas, context)
-      echo "end-insertViewBody"
 
   ## 以下のASTツリーは次のようなコードを展開する。
   ## proc insertViewBody (canvas: Canvas, context: CanvasContext2d) {.exportc.} =
