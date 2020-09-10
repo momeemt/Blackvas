@@ -4,7 +4,6 @@
 ## 
 ## shapeで仮想DOMに出力する？
 ## viewでも仮想DOMに出力する
-## updateで ことあるごとに redraw する？
 
 import macros
 
@@ -15,7 +14,6 @@ macro update*(body: untyped): untyped =
   #   # context.clearRect(0, 0, canvas.width, canvas.height)
   result = getDrawCanvasProc(body)
   result.add quote do:
-    echo "?"
     drawCanvasProc()
 
 macro view*(body: untyped): untyped =
