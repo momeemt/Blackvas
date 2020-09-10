@@ -1,4 +1,4 @@
-import macros, strformat, json
+import macros, strformat, json, tables, random, math, strutils
 
 # Forward declaration
 proc getNoArgumentShapeMacro (macroName, body: NimNode): NimNode
@@ -9,13 +9,24 @@ proc getShape (body: NimNode): string
 
 macro shapes* (body: untyped): untyped =
   result = newStmtList()
+  # clickEventProcJson
+  # 各クリックイベントの処理を格納し、最後にProc NimNodeに変換するための一時変数
+  result.add """
+import macros, dom
+var
+  clickEventProcSeq: seq[tuple[name: string, node: NimNode]]
+  localShapeJson = %* []
+  shapeJson = %* {}
+  shapeCount = 0
+""".parseStmt
   result.add quote do:
-    proc getResetShapeStyle (): NimNode =
-      result = quote do:
-        var resetStyleJson = %* { "func": "style_reset" }
-        virtualCanvas["virtual_canvas"].add(resetStyleJson)
     
     import macros
+
+    proc restructJson(shapeInstanceName, kind, value: string) =
+      let restructedShapeJson = virtualCanvas["virtual_canvas"][shapeInstanceName]
+      restructedShapeJson[kind] = newJString(value)
+      
     proc getShapeProcNimNode (shape: string): NimNode =
       result = newNimNode(nnkBlockStmt).add(
         ident("shapeProcBlock"),
@@ -29,8 +40,8 @@ macro shapes* (body: untyped): untyped =
       y1: int
       x2: int
       y2: int
-    
-    proc getAddListenerClickEvent (procedureName: NimNode, shape: string): NimNode =
+
+    proc getAddListenerClickEvent (procedureName: NimNode, shape: string, shapeInstanceName: string): NimNode =
       let shapeNimNode = shape.parseStmt
       var devideShapes: seq[Rect] = @[]
       for sentence in shapeNimNode:
@@ -42,46 +53,37 @@ macro shapes* (body: untyped): untyped =
             y2: sentence[2].intVal.int + sentence[4].intVal.int
           )
       result = quote("@@") do:
-        var clickEventJson = %* { "event": "click", "proc": "testClickProc" }
-        virtualCanvas["events"].add(clickEventJson)
-        proc testClickProc (canvas: Canvas, event: Event) =
-          let
-            canvasRect = canvas.getBoundingClientRect()
-            basePointX = event.clientX - canvasRect.left.int
-            basePointY = event.clientY - canvasRect.top.int
-          var isClick = false
-          for devideShape in @@devideShapes:
-            let intoCond1 = devideShape.x1 <= basePointX and devideShape.y1 <= basePointY
-            let intoCond2 = devideShape.x2 >= basePointX and devideShape.y2 >= basePointY
-            if intoCond1 and intoCond2:
-              isClick = true
-          if isClick:
-            @@procedureName()
-
-    proc getStyleByAttribute (attributeName, attributeValue: string): NimNode =
-      result = quote("@@") do:
-        block shapeScope:
-          var key = ""
-          key = "@" & @@attributeValue
-          # if @@attributeName == "id":
-          #   key = "#" & @@attributeValue
-          # elif @@attributeName == "class":
-          #   key = "." & @@attributeValue
-          if blackvasStyleMap.hasKey(key):
-            for styleKey, styleValue in blackvasStyleMap[key]:
-              case styleKey:
-              of "color":
-                # context.fillStyle = styleValue
-                var styleJson = %* { "func": "style_color", "color": styleValue }
-                virtualCanvas["virtual_canvas"].add(styleJson)
-              of "font":
-                # context.font = styleValue
-                var styleJson = %* { "func": "style_font", "font": styleValue }
-                virtualCanvas["virtual_canvas"].add(styleJson)
-              of "textAlign":
-                # context.textAlign = styleValue
-                var styleJson = %* { "func": "style_text_align", "font": styleValue }
-                virtualCanvas["virtual_canvas"].add(styleJson)
+        window.addEventListener("load",
+          proc(event: Event) =
+            var canvas: Canvas
+            if document.getElementById("myCanvas") == nil:
+              let blackvas = document.getElementById("Blackvas")
+              canvas = dom.document.createElement("canvas").Canvas
+              canvas.id = "myCanvas"
+              canvas.height = 1000
+              canvas.width = 1000
+              blackvas.appendChild(canvas)
+            else:
+              canvas = document.getElementById("myCanvas").Canvas
+            let context = canvas.getContext2d()
+            canvas.addEventListener("click", 
+              proc (event: Blackvas.Event) =
+                let
+                  canvasRect = canvas.getBoundingClientRect()
+                  basePointX = event.clientX - canvasRect.left.int
+                  basePointY = event.clientY - canvasRect.top.int
+                var isClick = false
+                for devideShape in @@devideShapes:
+                  let intoCond1 = devideShape.x1 <= basePointX and devideShape.y1 <= basePointY
+                  let intoCond2 = devideShape.x2 >= basePointX and devideShape.y2 >= basePointY
+                  if intoCond1 and intoCond2:
+                    isClick = true
+                if isClick:
+                  let shapeTuple = @@procedureName()
+                  restructJson(@@shapeInstanceName, shapeTuple[0], shapeTuple[1])
+                  draw(context)
+            )
+        )
   result.add body
 
 macro shape* (head: untyped, body: untyped): untyped =
@@ -96,16 +98,41 @@ proc getNoArgumentShapeMacro (macroName, body: NimNode): NimNode =
   result = quote do:
     import macros
     macro `macroName`* () =
-      result = getResetShapeStyle()
       result.add getShapeProcNimNode(`shape`)
 
-proc getOnlyBodyShapeMacro (macroName, body: NimNode): NimNode =
+var rng {.compileTime.} = initRand(100000000)
+
+proc getOnlyBodyShapeMacro (macroName, body: NimNode): NimNode {.compileTime.} =
   macroName.expectKind(nnkIdent)
   let shape = getShape(body)
-  result = quote do:
+  let macroNameStr = macroName.strVal
+  result = """
+localShapeJson = %* []
+""".parseStmt
+  let shapeInstanceName = "shape_" & $rng.rand(10000000)
+  echo $rng.rand(10000000)
+  echo $rng.rand(10000000)
+  for sentence in body:
+    if sentence[0].kind == nnkIdent:
+      let name = repr sentence[0]
+      case name:
+      of "rect":
+        let
+          x = sentence[1].intVal.int
+          y = sentence[2].intVal.int
+          width = sentence[3].intVal.int
+          height = sentence[4].intVal.int
+        result.add quote do:
+          var rectJson = %* { "func": "rect", "x": `x`, "y": `y`, "width": `width`, "height": `height` }
+          localShapeJson.add(rectJson)
+  result.add quote do:
+    virtualCanvas["shapes"].add(`macroNameStr`, localShapeJson)
+  result.add quote do:
     import macros
     macro `macroName`* (body: untyped) =
-      result = getResetShapeStyle()
+      result = quote do:
+        discard # 何故か下の文だけでコンパイルするとエラーになる...
+        shapeJson = %* {"shape": `macroNameStr`}
       for sentence in body:
         expectLen(sentence, 2)
         let sentenceKind = sentence[0].kind
@@ -115,7 +142,7 @@ proc getOnlyBodyShapeMacro (macroName, body: NimNode): NimNode =
           let procedureNameUntype = sentence[1]
           case eventName:
           of "click":
-            result.add getAddListenerClickEvent(procedureNameUntype, `shape`)
+            result.add getAddListenerClickEvent(procedureNameUntype, `shape`, `shapeInstanceName`)
           else:
             discard
         elif sentenceKind == nnkIdent:
@@ -125,43 +152,31 @@ proc getOnlyBodyShapeMacro (macroName, body: NimNode): NimNode =
           if attributeValueKind == nnkStrLit:
             if attributeName == "class" or attributeName == "id":
               var trimmedAttributeValue = attributeValue[1..attributeValue.len-2]
-              result.add getStyleByAttribute(attributeName, trimmedAttributeValue)
+              result.add quote("@@") do:
+                shapeJson[@@attributeName] = newJString @@attributeValue
             else:
               error("Undefined attributes", sentence[0])
+
           elif attributeValueKind == nnkIdent:
+            # 変数が与えられたとき
+            let attributeName = sentence[0].repr
             let attributeValueNimNode = sentence[1]
             result.add quote("@@") do:
-              let attributeValue = $(@@attributeValueNimNode)
-              block shapeScope:
-                var key = ""
-                key = "@" & attributeValue
-                # if @@attributeName == "id":
-                #   key = "#" & @@attributeValue
-                # elif @@attributeName == "class":
-                #   key = "." & @@attributeValue
-                if blackvasStyleMap.hasKey(key):
-                  for styleKey, styleValue in blackvasStyleMap[key]:
-                    case styleKey:
-                    of "color":
-                      var styleJson = %* { "func": "style_color", "color": styleValue }
-                      virtualCanvas["virtual_canvas"].add(styleJson)
-                    of "font":
-                      var styleJson = %* { "func": "style_font", "font": styleValue }
-                      virtualCanvas["virtual_canvas"].add(styleJson)
-                    of "textAlign":
-                      var styleJson = %* { "func": "style_text_align", "font": styleValue }
-                      virtualCanvas["virtual_canvas"].add(styleJson)
+              shapeJson[@@attributeName] = newJString(@@attributeValueNimNode)
           else:
             error("Undefined attributes", sentence[0])
         else:
           error("Unrecognized Events: ", sentence[0])
-      result.add getShapeProcNimNode(`shape`)
+      result.add quote do:
+        ## 定義したshapeをvirtualCanvasに書き出す
+        virtualCanvas["virtual_canvas"].add(`shapeInstanceName`, shapeJson)
+        echo `shapeInstanceName`
+        echo pretty(shapeJson)
 
 proc getHeadAndBodyShapeMacro (macroName, body: NimNode): NimNode =
   macroName.expectKind(nnkIdent)
   let shape = getShape(body)
   result = quote do:
-    import macros
     macro `macroName`* (head, body: untyped) =
       echo `shape`
 
@@ -183,20 +198,18 @@ template rect* (x, y, width, height: untyped): untyped =
   var rectJson = %* { "func": "rect", "x": `x`, "y": `y`, "width": `width`, "height": `height` }
   virtualCanvas["virtual_canvas"].add(rectJson)
 
-macro triangle* (v1x, v1y, v2x, v2y, v3x, v3y: untyped): untyped =
-  result = quote do:
-    var triabgleJson = %* {
-      "func": "triangle",
-      "v1x": `v1x`,
-      "v1y": `v1y`,
-      "v2x": `v2x`,
-      "v2y": `v2y`,
-      "v3x": `v3x`,
-      "v3y": `v3y`
-    }
-    virtualCanvas["virtual_canvas"].add(triangleJson)
+template triangle* (v1x, v1y, v2x, v2y, v3x, v3y: untyped): untyped =
+  var triabgleJson = %* {
+    "func": "triangle",
+    "v1x": `v1x`,
+    "v1y": `v1y`,
+    "v2x": `v2x`,
+    "v2y": `v2y`,
+    "v3x": `v3x`,
+    "v3y": `v3y`
+  }
+  virtualCanvas["virtual_canvas"].add(triangleJson)
 
-macro circle* (x, y, r: untyped): untyped =
-  result = quote do:
-    var circleJson = %* { "func": "circle", "x": `x`, "y": `y`, "r": `r` }
-    virtualCanvas["virtual_canvas"].add(circleJson)
+template circle* (x, y, r: untyped): untyped =
+  var circleJson = %* { "func": "circle", "x": `x`, "y": `y`, "r": `r` }
+  virtualCanvas["virtual_canvas"].add(circleJson)
