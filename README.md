@@ -1,5 +1,6 @@
 # Blackvas (EN / Ja(/README_ja.md))
-![](blackvas.png)
+![](blackvas.png)  
+
 **Blackvas** is a declarative UI framework for building Canvas (an HTML5 API).  
 It eliminates **redundancy** and **procedural instructions** from traditional JavaScript-based Canvas implementations, while providing useful procedures for events and animations.  
 Styling is implemented with reference to CSS properties, allowing you to call primary colors, Japanese colors, and more without using color code.  
