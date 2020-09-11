@@ -1,4 +1,4 @@
-# Blackvas (EN / Ja(/README_ja.md))
+# Blackvas (EN / [Ja](/README_ja.md))
 ![](blackvas.png)  
 
 **Blackvas** is a declarative UI framework for building Canvas (an HTML5 API).  
