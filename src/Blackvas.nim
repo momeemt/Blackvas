@@ -45,15 +45,15 @@ var
   virtualCanvas* = %* { "virtual_canvas": {}, "shapes": {}, "styles": {} }
 """.parseStmt
   result.add quote do:
+    proc removeDoubleQuotation(str: string): string =
+      result = str[1..str.len-2]
     proc drawShape (context: CanvasContext2d, shapesArr: JsonNode) =
       for obj in shapesArr:
         let rawObjFunc = obj["func"].pretty
         let objFunc = rawObjFunc[1..rawObjFunc.len-2]
         case objFunc:
         of "style_color":
-          let
-            rawColor = obj["color"].pretty
-            color = rawColor[1..rawColor.len-2]
+          let color = removeDoubleQuotation(obj["color"].pretty)
           context.fillStyle = color
         of "rect":
           let
@@ -66,8 +66,7 @@ var
           context.fill()
         of "text":
           let
-            rawValue = obj["value"].pretty
-            value = rawValue[1..rawValue.len-2]
+            value = removeDoubleQuotation(obj["value"].pretty)
             x = obj["x"].pretty.parseFloat
             y = obj["y"].pretty.parseFloat
           context.strokeText(value, x, y)
@@ -102,17 +101,14 @@ var
       for item in virtualCanvasObjects.pairs:
         if not item.val.hasKey("shape"):
           continue
-        let
-          rawShapeName = item.val["shape"].pretty
-          shapeName = rawShapeName[1..rawShapeName.len-2]
+        let shapeName = removeDoubleQuotation(item.val["shape"].pretty)
         var
-          rawIdName = ""
-          rawClassName = ""
           idName = ""
           className = ""
         if item.val.hasKey("id"):
-          rawIdName = item.val["id"].pretty
-          idName = "#" & rawIdName[1..rawIdName.len-2]
+          idName = "#" & removeDoubleQuotation(item.val["id"].pretty)
+        if item.val.hasKey("class"):
+          className = "." & removeDoubleQuotation(item.val["class"].pretty)
         context.font = "24px Arial"
         context.fillStyle = "#000000"
         context.textAlign = "start"
@@ -120,10 +116,8 @@ var
         let styleArrayById = styleObjects[idName]
         for obj in styleArrayById:
           let
-            rawStyle = obj["style"].pretty
-            style = rawStyle[1..rawStyle.len-2]
-            rawValue = obj["value"].pretty
-            value = rawValue[1..rawValue.len-2]
+            style = removeDoubleQuotation(obj["style"].pretty)
+            value = removeDoubleQuotation(obj["value"].pretty)
           case style:
           of "color":
             context.fillStyle = value
