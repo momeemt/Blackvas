@@ -1,0 +1,54 @@
+canvasId	Blackvas.html#canvasId	Blackvas: canvasId	
+height	Blackvas.html#height	Blackvas: height	
+width	Blackvas.html#width	Blackvas: width	
+settings	Blackvas.html#settings.m,untyped	Blackvas: settings(body: untyped): untyped	
+update	Blackvas.html#update.m,untyped	Blackvas: update(body: untyped): untyped	
+view	Blackvas.html#view.m,untyped	Blackvas: view(body: untyped): untyped	
+methods	Blackvas.html#methods.m,untyped	Blackvas: methods(body: untyped): untyped	
+Event	Blackvas.html#Event	Blackvas: Event	
+Canvas	Blackvas.html#Canvas	Blackvas: Canvas	
+BoundingRect	Blackvas.html#BoundingRect	Blackvas: BoundingRect	
+CanvasContext2d	Blackvas.html#CanvasContext2d	Blackvas: CanvasContext2d	
+repeat	Blackvas.html#repeat	Repetition.repeat	
+repeatX	Blackvas.html#repeatX	Repetition.repeatX	
+repeatY	Blackvas.html#repeatY	Repetition.repeatY	
+noRepeat	Blackvas.html#noRepeat	Repetition.noRepeat	
+Repetition	Blackvas.html#Repetition	Blackvas: Repetition	
+Align	Blackvas.html#Align	Blackvas: Align	
+addEventListener	Blackvas.html#addEventListener,Canvas,cstring,proc(Event),bool	Blackvas: addEventListener(et: Canvas; ev: cstring; cb: proc (ev: Event); useCapture: bool = false)	
+addEventListener	Blackvas.html#addEventListener,Window,cstring,proc(Event),bool	Blackvas: addEventListener(et: Window; ev: cstring; cb: proc (ev: Event); useCapture: bool = false)	
+arc	Blackvas.html#arc,CanvasContext2d,float,float,float,float,float,bool	Blackvas: arc(c: CanvasContext2d; x: float; y: float; radius: float; startAngle: float;\n    endAngle: float; anticlockwise: bool = false)	
+arcTo	Blackvas.html#arcTo,CanvasContext2d,float,float,float,float,float	Blackvas: arcTo(c: CanvasContext2d; x1: float; y1: float; x2: float; y2: float; radius: float)	
+beginPath	Blackvas.html#beginPath,CanvasContext2d	Blackvas: beginPath(c: CanvasContext2d)	
+bezierCurveTo	Blackvas.html#bezierCurveTo,CanvasContext2d,float,float,float,float,float,float	Blackvas: bezierCurveTo(c: CanvasContext2d; cp1x: float; cp1y: float; cp2x: float; cp2y: float;\n              x: float; y: float)	
+clearHitRegions	Blackvas.html#clearHitRegions,CanvasContext2d	Blackvas: clearHitRegions(c: CanvasContext2d)	
+clearRect	Blackvas.html#clearRect,CanvasContext2d,float,float,float,float	Blackvas: clearRect(c: CanvasContext2d; x: float; y: float; width: float; height: float)	
+clip	Blackvas.html#clip,CanvasContext2d	Blackvas: clip(c: CanvasContext2d)	
+closePath	Blackvas.html#closePath,CanvasContext2d	Blackvas: closePath(c: CanvasContext2d)	
+createImageData	Blackvas.html#createImageData,CanvasContext2d,float,float	Blackvas: createImageData(c: CanvasContext2d; width: float; height: float)	
+createLinearGradient	Blackvas.html#createLinearGradient,CanvasContext2d,float,float,float,float	Blackvas: createLinearGradient(c: CanvasContext2d; x0: float; y0: float; x1: float; y1: float)	
+createPattern	Blackvas.html#createPattern,CanvasContext2d,ImageElement,Repetition	Blackvas: createPattern(c: CanvasContext2d; image: ImageElement; repretition: Repetition)	
+createRadialGradient	Blackvas.html#createRadialGradient,CanvasContext2d,float,float,float,float,float,float	Blackvas: createRadialGradient(c: CanvasContext2d; x0: float; y0: float; r0: float; x1: float;\n                     y1: float; r1: float)	
+drawFocusIfNeeded	Blackvas.html#drawFocusIfNeeded,CanvasContext2d,Element	Blackvas: drawFocusIfNeeded(c: CanvasContext2d; element: Element)	
+drawImage	Blackvas.html#drawImage,CanvasContext2d,ImageElement,float,float	Blackvas: drawImage(c: CanvasContext2d; image: ImageElement; dx: float; dy: float)	
+stroke	Blackvas.html#stroke,CanvasContext2d	Blackvas: stroke(c: CanvasContext2d)	
+strokeText	Blackvas.html#strokeText,CanvasContext2d,cstring,float,float	Blackvas: strokeText(c: CanvasContext2d; txt: cstring; x, y: float)	
+fillText	Blackvas.html#fillText,CanvasContext2d,cstring,float,float	Blackvas: fillText(c: CanvasContext2d; txt: cstring; x, y: float)	
+fill	Blackvas.html#fill,CanvasContext2d	Blackvas: fill(c: CanvasContext2d)	
+rect	Blackvas.html#rect,CanvasContext2d,float,float,float,float	Blackvas: rect(c: CanvasContext2d; x: float; y: float; width: float; height: float)	
+fillRect	Blackvas.html#fillRect,CanvasContext2d,float,float,float,float	Blackvas: fillRect(c: CanvasContext2d; x: float; y: float; width: float; height: float)	
+moveTo	Blackvas.html#moveTo,CanvasContext2d,float,float	Blackvas: moveTo(c: CanvasContext2d; x: float; y: float)	
+lineTo	Blackvas.html#lineTo,CanvasContext2d,float,float	Blackvas: lineTo(c: CanvasContext2d; x: float; y: float)	
+getContext2d	Blackvas.html#getContext2d,Canvas	Blackvas: getContext2d(c: Canvas): CanvasContext2d	
+getBoundingClientRect	Blackvas.html#getBoundingClientRect,Canvas	Blackvas: getBoundingClientRect(c: Canvas): BoundingRect	
+data	Blackvas.html#data.t,untyped	Blackvas: data(statement: untyped): untyped	
+PrimaryColor	Blackvas.html#PrimaryColor	Blackvas: PrimaryColor	
+JapaneseColor	Blackvas.html#JapaneseColor	Blackvas: JapaneseColor	
+style	Blackvas.html#style.m,untyped	Blackvas: style(body: untyped): untyped	
+shapes	Blackvas.html#shapes.m,untyped	Blackvas: shapes(body: untyped): untyped	
+shape	Blackvas.html#shape.m,untyped,untyped	Blackvas: shape(head: untyped; body: untyped): untyped	
+text	Blackvas.html#text.m,untyped	Blackvas: text(head: untyped): untyped	
+rect	Blackvas.html#rect.t,untyped,untyped,untyped,untyped	Blackvas: rect(x, y, width, height: untyped): untyped	
+triangle	Blackvas.html#triangle.t,untyped,untyped,untyped,untyped,untyped,untyped	Blackvas: triangle(v1x, v1y, v2x, v2y, v3x, v3y: untyped): untyped	
+circle	Blackvas.html#circle.t,untyped,untyped,untyped	Blackvas: circle(x, y, r: untyped): untyped	
+Blackvas	Blackvas.html#Blackvas.m,untyped	Blackvas: Blackvas(body: untyped): untyped	

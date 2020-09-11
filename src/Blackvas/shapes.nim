@@ -1,3 +1,7 @@
+## shape.nim
+## 
+## オブジェクトをパースして仮想Canvasに書き込みます。
+
 import macros, strformat, json, tables, random, math, strutils
 
 # Forward declaration
@@ -8,6 +12,7 @@ proc getShape (body: NimNode): string
 # End
 
 macro shapes* (body: untyped): untyped =
+  ## shapeオブジェクトをパースして仮想Canvasに書き込みます。
   result = newStmtList()
   # clickEventProcJson
   # 各クリックイベントの処理を格納し、最後にProc NimNodeに変換するための一時変数
