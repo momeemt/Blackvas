@@ -1,3 +1,7 @@
+## settings.nim
+## 
+## Blackvasの設定事項を読み込み、パースします。
+
 import macros
 
 var

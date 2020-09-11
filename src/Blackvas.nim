@@ -1,6 +1,38 @@
+## Blackvas.nim
+## 
+## 仮想Canvas (virtualCanvas) をHTMLに反映する機能を備えます。
+
 include Blackvas/[settings, view, methods, canvas, data, color, style, shapes]
 
 macro Blackvas*(body: untyped): untyped =
+  ## Blackvasプロジェクトであることを示す文です。
+  ## このマクロは、仮想CanvasをHTMLに反映するプロシージャなどを生成します。
+  ## また、文中で定義されたプログラムを全て出力します。
+  ## 
+  ## * 生成される変数
+  ## 
+  ##  * canvas
+  ##    * window.onloadが実行されるタイミングでDOM要素に作成されるcanvas要素が代入されます。
+  ## 
+  ##  * context
+  ##    * canvas要素のcontextが代入されます。
+  ## 
+  ##  * globalEvent
+  ##    * イベントハンドラなどが引数などで渡すeventオブジェクトが代入されます。
+  ## 
+  ##  * virtualCanvas
+  ##    * Blackvasでは、スタイルやオブジェクトなどの情報を全てこのJSONで扱い、最終的にこの値を元にしてHTMLに反映します。
+  ## 
+  ## * 生成されるプロシージャ
+  ## 
+  ##  * drawShape (context: CanvasContext2d, shapesArr: JsonNode)
+  ##    * shapes情報が含まれるJSONArrayを元に、オブジェクトを画面に反映します。
+  ## 
+  ##  * draw (context: CanvasContext2d)
+  ##    * virtualCanvasを元に、画面にCanvasを描画します。
+  ## 
+  ##  * window.addEventListener ("load", ...)
+  ##    * HTML要素が読み込まれた時、Canvasを作成し、contextなどを変数に代入します。
   result = """
 import json, strutils, math, dom, tables
 var

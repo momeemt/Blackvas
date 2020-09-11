@@ -1,6 +1,11 @@
+## style.nim
+## 
+## canvasグラフィックスのスタイルを提供します。
+
 import macros
 
 macro style*(body: untyped): untyped =
+  ## style文は、定義したStyleをパースし仮想Canvasに書き込みます。
   result = """
 import tables, json
 var blackvasStyleMap = initTable[string, initTable[string, string]()]()

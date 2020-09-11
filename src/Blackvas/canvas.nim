@@ -1,3 +1,6 @@
+## canvas.nim
+## 
+## DOM要素のCanvasを読み込むためのモジュールです。
 import dom
 
 type
