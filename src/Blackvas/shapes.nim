@@ -61,15 +61,15 @@ var
         window.addEventListener("load",
           proc(event: Event) =
             var canvas: Canvas
-            if document.getElementById("myCanvas") == nil:
+            if document.getElementById(canvasId) == nil:
               let blackvas = document.getElementById("Blackvas")
               canvas = dom.document.createElement("canvas").Canvas
-              canvas.id = "myCanvas"
-              canvas.height = 1000
-              canvas.width = 1000
+              canvas.id = canvasId
+              canvas.height = height
+              canvas.width = width
               blackvas.appendChild(canvas)
             else:
-              canvas = document.getElementById("myCanvas").Canvas
+              canvas = document.getElementById(canvasId).Canvas
             let context = canvas.getContext2d()
             canvas.addEventListener("click", 
               proc (event: Blackvas.Event) =
@@ -115,8 +115,6 @@ proc getOnlyBodyShapeMacro (macroName, body: NimNode): NimNode {.compileTime.} =
 localShapeJson = %* []
 """.parseStmt
   let shapeInstanceName = "shape_" & $rng.rand(10000000)
-  echo $rng.rand(10000000)
-  echo $rng.rand(10000000)
   for sentence in body:
     if sentence[0].kind == nnkIdent:
       let name = repr sentence[0]
@@ -175,8 +173,6 @@ localShapeJson = %* []
       result.add quote do:
         ## 定義したshapeをvirtualCanvasに書き出す
         virtualCanvas["virtual_canvas"].add(`shapeInstanceName`, shapeJson)
-        echo `shapeInstanceName`
-        echo pretty(shapeJson)
 
 proc getHeadAndBodyShapeMacro (macroName, body: NimNode): NimNode =
   macroName.expectKind(nnkIdent)

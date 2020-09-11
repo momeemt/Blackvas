@@ -4,6 +4,9 @@
 
 include Blackvas/[settings, view, methods, canvas, data, color, style, shapes]
 
+const
+  Debug* = true
+
 macro Blackvas*(body: untyped): untyped =
   ## Blackvasプロジェクトであることを示す文です。
   ## このマクロは、仮想CanvasをHTMLに反映するプロシージャなどを生成します。
@@ -128,19 +131,20 @@ var
 
     window.addEventListener("load",
       proc (event: Event) =
-        if document.getElementById("myCanvas") == nil:
+        if document.getElementById(canvasId) == nil:
           let blackvas = document.getElementById("Blackvas")
           canvas = dom.document.createElement("canvas").Canvas
-          canvas.id = "myCanvas"
-          canvas.height = 1000
-          canvas.width = 1000
+          canvas.id = canvasId
+          canvas.height = height
+          canvas.width = width
           blackvas.appendChild(canvas)
         else:
-          canvas = document.getElementById("myCanvas").Canvas
+          canvas = document.getElementById(canvasId).Canvas
         
         context = canvas.getContext2d()
 
-        echo pretty virtualCanvas
+        when Debug:
+          echo pretty virtualCanvas
         draw(context)
         echo "Hello, Blackvas ;)"
     )
