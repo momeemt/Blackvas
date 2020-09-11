@@ -1,23 +1,68 @@
 # Blackvas ([EN](/README.md) / Ja)
-BlackvasはHTML5 APIの一つであるCanvasAPIを、宣言的に扱えるように実装したライブラリです。
-従来のようにJavaScriptから命令的に実装していた冗長なコードを、よりスッキリと見やすいコードに整えることができます。
-また、CanvasのスタイルはCSSを作成して読み込むことで適応できるので、JavaScript DOMの知識は一切不要で、学習コストを軽減します。
-Blackvasを扱うのに必要なのは、`initialize`、`view`、`exportShapes`の3つの概念のみです。
+**Blackvas**はCanvas (HTML5 APIの一つ) を構築するための宣言的UIフレームワークです。  
+従来のJavaScriptで書かれたCanvas実装から**冗長さ**や**手続き的命令**を排除し、さらにイベントやアニメーションにおける便利なプロシージャを提供します。  
+スタイリングはCSSのプロパティを参考に実装しており、原色や和色などをカラーコードを利用しないで呼び出すことができます。  
+JavaScript DOMの知識はなるべく必要ないように設計しており、学習コストを軽減しています。  
+付属する **Blackvas CLI** を利用することで **Nimble** などNim固有の知識がなくてもすぐにプロジェクトを開始できます。  
 
-## initialize
-Canvasグラフィックを開始するには、まず`init`マクロを利用して構成要素の初期化を行います。
+## Shape
+**Shape** は図形やテキストなどのオブジェクトを一つの形として扱うための仕組みです。  
 
-### data
+```nim
+shapes:
+  shape MyShape:
+    rect(100, 100, 40, 40)
+```
 
-### shapes
-`shapes`マクロを利用して、Canvasグラフィックの小さな構成を定義することができます。
+**shapes**はshapeで定義した図形を扱うための処理を行うため、必ず**shape文はshapes文の中で使わなければいけません**。  
+**MyShape**はこのshapeの名前として扱われます。  
+shape文は単なる形の定義するための文であり、**Webページに反映することはできません**。
 
-### methods
+## View
+**View** は定義したShapeをHTMLページに反映するための仕組みです。  
 
-### animations
+```nim
+view:
+  MyShape()
+```
 
-## view
-initializeで構築したCanvasグラフィックをDOM要素に適応します。
+shape文で定義したのち、プロシージャのように呼び出すことでページに反映することができます。  
 
-## exportShapes
-initializeで構築したCanvasグラフィックを外部ファイル向けに出力します。`exportShapes`マクロを`view`マクロと共存させることはできません。
+## Style
+**Style** はスタイル要素を定義するための仕組みです。
+
+```nim
+style:
+  id myId:
+    color = Primary.red
+```
+
+**id**は、viewに描画するshape１つにつき１つ割り当てられます。  
+
+```nim
+view:
+  MyShape:
+    id = "myId"
+```
+
+idは、viewでshapeを適用する時に与えることができます。
+
+## Data
+**Data** は変数を定義するための仕組みですが、現在はスコープなど特別な機能は実装しておらず、グローバルに公開されます。
+
+## Methods
+**Methods** はプロシージャを定義するための仕組みです。  
+ここでは、クリックイベントによってidを変更することを示します。  
+
+```nim
+methods:
+  proc changeId(): (string, string) =
+    if rand(1) >= 0.5:
+      result = ("id", "id1")
+    else:
+      result = ("id", "id2")
+
+view:
+  MyShape:
+    @click = changeId
+```
