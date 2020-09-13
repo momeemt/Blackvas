@@ -271,32 +271,3 @@ proc getShape (body: NimNode): string =
   result = ""
   for sentence in body:
     result &= fmt"{repr(sentence)}" & "\n"
-
-macro text* (head: untyped): untyped =
-  let textStr = $head[0]
-  let x = intVal(head[1]).float
-  let y = intVal(head[2]).float
-  result = quote do:
-    var textJson = %* { "func": "text", "value": `textStr`, "x": `x`, "y": `y` }
-    virtualCanvas["virtual_canvas"].add
-
-
-template rect* (x, y, width, height: untyped): untyped =
-  var rectJson = %* { "func": "rect", "x": `x`, "y": `y`, "width": `width`, "height": `height` }
-  virtualCanvas["virtual_canvas"].add(rectJson)
-
-template triangle* (v1x, v1y, v2x, v2y, v3x, v3y: untyped): untyped =
-  var triabgleJson = %* {
-    "func": "triangle",
-    "v1x": `v1x`,
-    "v1y": `v1y`,
-    "v2x": `v2x`,
-    "v2y": `v2y`,
-    "v3x": `v3x`,
-    "v3y": `v3y`
-  }
-  virtualCanvas["virtual_canvas"].add(triangleJson)
-
-template circle* (x, y, r: untyped): untyped =
-  var circleJson = %* { "func": "circle", "x": `x`, "y": `y`, "r": `r` }
-  virtualCanvas["virtual_canvas"].add(circleJson)
