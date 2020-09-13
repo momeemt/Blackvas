@@ -2,7 +2,7 @@
 ## 
 ## 仮想Canvas (virtualCanvas) をHTMLに反映する機能を備えます。
 
-include Blackvas/[settings, view, methods, canvas, data, color, style, shapes]
+include Blackvas/[types, settings, view, methods, canvas, data, color, style, shapes]
 
 const
   Debug* = true
@@ -73,12 +73,12 @@ var
           context.fillText(value, x, y)
         of "triangle":
           let
-            v1x = obj["v1x"].pretty.parseFloat
-            v1y = obj["v1y"].pretty.parseFloat
-            v2x = obj["v2x"].pretty.parseFloat
-            v2y = obj["v2y"].pretty.parseFloat
-            v3x = obj["v3x"].pretty.parseFloat
-            v3y = obj["v3y"].pretty.parseFloat
+            v1x = obj["x1"].pretty.parseFloat
+            v1y = obj["y1"].pretty.parseFloat
+            v2x = obj["x2"].pretty.parseFloat
+            v2y = obj["y2"].pretty.parseFloat
+            v3x = obj["x3"].pretty.parseFloat
+            v3y = obj["y3"].pretty.parseFloat
           context.beginPath()
           context.moveTo(v1x, v1y)
           context.lineTo(v2x, v2y)

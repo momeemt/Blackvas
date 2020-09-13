@@ -26,7 +26,7 @@ var
 """.parseStmt
   result.add quote do:
     
-    import macros
+    import macros, strutils
 
     proc restructJson(shapeInstanceName, kind, value: string) =
       let restructedShapeJson = virtualCanvas["virtual_canvas"][shapeInstanceName]
@@ -39,25 +39,32 @@ var
           shape.parseStmt
         )
       )
-    
-    type Rect = object
-      x1: int
-      y1: int
-      x2: int
-      y2: int
 
     proc getAddListenerClickEvent (procedureName: NimNode, shape: string, shapeInstanceName: string): NimNode =
       let shapeNimNode = shape.parseStmt
-      var devideShapes: seq[Rect] = @[]
+      var devideShapes = newSeq[string]()
       for sentence in shapeNimNode:
         if sentence[0].repr == "rect":
-          devideShapes.add Rect(
-            x1: sentence[1].intVal.int,
-            y1: sentence[2].intVal.int,
-            x2: sentence[1].intVal.int + sentence[3].intVal.int,
-            y2: sentence[2].intVal.int + sentence[4].intVal.int
-          )
+          # jsonで扱う
+          devideShapes.add (%* {
+            "kind": "rect",
+            "x": sentence[1].floatVal.float,
+            "y": sentence[2].floatVal.float,
+            "width": sentence[3].floatVal.float,
+            "height": sentence[4].floatVal.float
+          }).pretty
+        elif sentence[0].repr == "triangle":
+          devideShapes.add (%* {
+            "kind": "triangle",
+            "x1": sentence[1].floatVal.float,
+            "y1": sentence[2].floatVal.float,
+            "x2": sentence[3].floatVal.float,
+            "y2": sentence[4].floatVal.float,
+            "x3": sentence[5].floatVal.float,
+            "y3": sentence[6].floatVal.float
+          }).pretty
       result = quote("@@") do:
+        import json
         window.addEventListener("load",
           proc(event: Event) =
             var canvas: Canvas
@@ -75,14 +82,30 @@ var
               proc (event: Blackvas.Event) =
                 let
                   canvasRect = canvas.getBoundingClientRect()
-                  basePointX = event.clientX - canvasRect.left.int
-                  basePointY = event.clientY - canvasRect.top.int
+                  basePointX = event.clientX - canvasRect.left
+                  basePointY = event.clientY - canvasRect.top
                 var isClick = false
-                for devideShape in @@devideShapes:
-                  let intoCond1 = devideShape.x1 <= basePointX and devideShape.y1 <= basePointY
-                  let intoCond2 = devideShape.x2 >= basePointX and devideShape.y2 >= basePointY
-                  if intoCond1 and intoCond2:
-                    isClick = true
+                var shapes = newSeq[JsonNode]()
+                for shapeStr in @@devideShapes:
+                  shapes.add shapeStr.parseJson
+                for shape in shapes:
+                  let
+                    rawKind = shape["kind"].pretty
+                    kind = rawKind[1..rawKind.len-2]
+                  case kind:
+                  of "rect":
+                    let intoCond1 = shape["x"].getFloat <= basePointX and shape["y"].getFloat <= basePointY
+                    let intoCond2 = (shape["x"].getFloat + shape["width"].getFloat) >= basePointX and (shape["y"].getFloat + shape["height"].getFloat) >= basePointY
+                    if intoCond1 and intoCond2:
+                      isClick = true
+                  of "triangle":
+                    # ベクトル係数を計算して三角形内にクリック座標が含まれているか
+                    let area = 0.5 * (-shape["y2"].getFloat * shape["x3"].getFloat + shape["y1"].getFloat * (-shape["x2"].getFloat + shape["x3"].getFloat) + shape["x1"].getFloat * (shape["y2"].getFloat - shape["y3"].getFloat) + shape["x2"].getFloat * shape["y3"].getFloat)
+                    let sScala = 1 / (2 * area) * (shape["y1"].getFloat * shape["x3"].getFloat - shape["x1"].getFloat * shape["y3"].getFloat + (shape["y3"].getFloat - shape["y1"].getFloat) * basePointX + (shape["x1"].getFloat - shape["x3"].getFloat) * basePointY)
+                    let tScala = 1 / (2 * area) * (shape["x1"].getFloat * shape["y2"].getFloat - shape["y1"].getFloat * shape["x2"].getFloat + (shape["y1"].getFloat - shape["y2"].getFloat) * basePointX + (shape["x2"].getFloat - shape["x1"].getFloat) * basePointY)
+                    let scalaDiff = 1 - sScala - tScala
+                    if (0 < sScala and sScala < 1) and (0 < tScala and tScala < 1) and (0 < scalaDiff and scalaDiff < 1):
+                      isClick = true
                 if isClick:
                   let shapeTuple = @@procedureName()
                   restructJson(@@shapeInstanceName, shapeTuple[0], shapeTuple[1])
@@ -121,13 +144,32 @@ localShapeJson = %* []
       case name:
       of "rect":
         let
-          x = sentence[1].intVal.int
-          y = sentence[2].intVal.int
-          width = sentence[3].intVal.int
-          height = sentence[4].intVal.int
+          x = sentence[1].floatVal.float
+          y = sentence[2].floatVal.float
+          width = sentence[3].floatVal.float
+          height = sentence[4].floatVal.float
         result.add quote do:
           var rectJson = %* { "func": "rect", "x": `x`, "y": `y`, "width": `width`, "height": `height` }
           localShapeJson.add(rectJson)
+      of "triangle":
+        let
+          x1 = sentence[1].floatVal.float
+          y1 = sentence[2].floatVal.float
+          x2 = sentence[3].floatVal.float
+          y2 = sentence[4].floatVal.float
+          x3 = sentence[5].floatVal.float
+          y3 = sentence[6].floatVal.float
+        result.add quote do:
+          var triangleJson = (%* {
+            "func": "triangle",
+            "x1": `x1`,
+            "y1": `y1`,
+            "x2": `x2`,
+            "y2": `y2`,
+            "x3": `x3`,
+            "y3": `y3`
+          })
+          localShapeJson.add(triangleJson)
   result.add quote do:
     virtualCanvas["shapes"].add(`macroNameStr`, localShapeJson)
   result.add quote do:
