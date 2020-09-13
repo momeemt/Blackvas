@@ -23,10 +23,29 @@ var
   localShapeJson = %* []
   shapeJson = %* {}
   shapeCount = 0
+type VasContext* = object
+  shapeId: string
+  x: float
+  y: float
 """.parseStmt
   result.add quote do:
     
     import macros, strutils
+
+    proc getVasContext(shapeInstanceName: string): VasContext =
+      var
+        shapeId = ""
+        x = 0.0
+        y = 0.0
+      let shapeInstance = virtualCanvas["virtual_canvas"][shapeInstanceName]
+      if shapeInstance.hasKey("id"):
+        shapeId = shapeInstance["id"].getStr
+      if shapeInstance.hasKey("x"):
+        x = shapeInstance["x"].getFloat
+      if shapeInstance.hasKey("y"):
+        y = shapeInstance["y"].getFloat
+      
+      result = VasContext(shapeId: shapeId, x: x, y: y)
 
     proc restructJson(shapeInstanceName, kind, value: string) =
       let restructedShapeJson = virtualCanvas["virtual_canvas"][shapeInstanceName]
@@ -35,6 +54,12 @@ var
     proc restructJson(shapeInstanceName: string, kind: string, value: float) =
       let restructedShapeJson = virtualCanvas["virtual_canvas"][shapeInstanceName]
       restructedShapeJson[kind] = newJFloat(value)
+    
+    proc restructJson(shapeInstanceName: string, vasContext: VasContext) =
+      let restructedShapeJson = virtualCanvas["virtual_canvas"][shapeInstanceName]
+      restructedShapeJson["x"] = newJFloat(vasContext.x)
+      restructedShapeJson["y"] = newJFloat(vasContext.y)
+      restructedShapeJson["id"] = newJString(vasContext.shapeId)
       
     proc getShapeProcNimNode (shape: string): NimNode =
       result = newNimNode(nnkBlockStmt).add(
@@ -49,8 +74,9 @@ var
       result = quote("@@") do:
         discard window.setInterval(
           proc () =
-            let shapeTuple = @@procedureName()
-            restructJson(@@shapeInstanceName, shapeTuple[0], shapeTuple[1])
+            var vasContext = getVasContext(@@shapeInstanceName)
+            @@procedureName(vasContext)
+            restructJson(@@shapeInstanceName, vasContext)
             draw(context)
         , 20)
 
@@ -136,8 +162,9 @@ var
                     if pointDistanceSquare <= shape["r"].getFloat ^ 2:
                       isClick = true
                 if isClick:
-                  let shapeTuple = @@procedureName()
-                  restructJson(@@shapeInstanceName, shapeTuple[0], shapeTuple[1])
+                  var vasContext = getVasContext(@@shapeInstanceName)
+                  @@procedureName(vasContext)
+                  restructJson(@@shapeInstanceName, vasContext)
                   draw(context)
             )
         )
