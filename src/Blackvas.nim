@@ -2,7 +2,7 @@
 ## 
 ## 仮想Canvas (virtualCanvas) をHTMLに反映する機能を備えます。
 
-include Blackvas/[types, settings, view, methods, canvas, data, color, style, shapes]
+include Blackvas/[settings, view, methods, canvas, data, color, style, shapes]
 
 const
   Debug* = true

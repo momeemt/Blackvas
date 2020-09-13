@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.2.0"
+version       = "0.2.1"
 author        = "Momeemt"
 description   = "declarative UI framework for building Canvas"
 license       = "MIT"
