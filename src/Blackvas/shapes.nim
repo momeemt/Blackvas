@@ -31,6 +31,10 @@ var
     proc restructJson(shapeInstanceName, kind, value: string) =
       let restructedShapeJson = virtualCanvas["virtual_canvas"][shapeInstanceName]
       restructedShapeJson[kind] = newJString(value)
+
+    proc restructJson(shapeInstanceName: string, kind: string, value: float) =
+      let restructedShapeJson = virtualCanvas["virtual_canvas"][shapeInstanceName]
+      restructedShapeJson[kind] = newJFloat(value)
       
     proc getShapeProcNimNode (shape: string): NimNode =
       result = newNimNode(nnkBlockStmt).add(
@@ -44,18 +48,19 @@ var
       let shapeNimNode = shape.parseStmt
       var devideShapes = newSeq[string]()
       for sentence in shapeNimNode:
-        if sentence[0].repr == "rect":
-          # jsonで扱う
+        let shapeKind = sentence[0].repr
+        case shapeKind:
+        of "rect":
           devideShapes.add (%* {
-            "kind": "rect",
+            "kind": shapeKind,
             "x": sentence[1].floatVal.float,
             "y": sentence[2].floatVal.float,
             "width": sentence[3].floatVal.float,
             "height": sentence[4].floatVal.float
           }).pretty
-        elif sentence[0].repr == "triangle":
+        of "triangle":
           devideShapes.add (%* {
-            "kind": "triangle",
+            "kind": shapeKind,
             "x1": sentence[1].floatVal.float,
             "y1": sentence[2].floatVal.float,
             "x2": sentence[3].floatVal.float,
@@ -63,6 +68,14 @@ var
             "x3": sentence[5].floatVal.float,
             "y3": sentence[6].floatVal.float
           }).pretty
+        of "circle":
+          devideShapes.add (%* {
+            "kind": shapeKind,
+            "x": sentence[1].floatVal.float,
+            "y": sentence[2].floatVal.float,
+            "r": sentence[3].floatVal.float
+          }).pretty
+
       result = quote("@@") do:
         import json
         window.addEventListener("load",
@@ -98,6 +111,7 @@ var
                     let intoCond2 = (shape["x"].getFloat + shape["width"].getFloat) >= basePointX and (shape["y"].getFloat + shape["height"].getFloat) >= basePointY
                     if intoCond1 and intoCond2:
                       isClick = true
+                  
                   of "triangle":
                     # ベクトル係数を計算して三角形内にクリック座標が含まれているか
                     let area = 0.5 * (-shape["y2"].getFloat * shape["x3"].getFloat + shape["y1"].getFloat * (-shape["x2"].getFloat + shape["x3"].getFloat) + shape["x1"].getFloat * (shape["y2"].getFloat - shape["y3"].getFloat) + shape["x2"].getFloat * shape["y3"].getFloat)
@@ -105,6 +119,11 @@ var
                     let tScala = 1 / (2 * area) * (shape["x1"].getFloat * shape["y2"].getFloat - shape["y1"].getFloat * shape["x2"].getFloat + (shape["y1"].getFloat - shape["y2"].getFloat) * basePointX + (shape["x2"].getFloat - shape["x1"].getFloat) * basePointY)
                     let scalaDiff = 1 - sScala - tScala
                     if (0 < sScala and sScala < 1) and (0 < tScala and tScala < 1) and (0 < scalaDiff and scalaDiff < 1):
+                      isClick = true
+                  
+                  of "circle":
+                    let pointDistanceSquare = (shape["x"].getFloat - basePointX) ^ 2 + (shape["y"].getFloat - basePointY) ^ 2
+                    if pointDistanceSquare <= shape["r"].getFloat ^ 2:
                       isClick = true
                 if isClick:
                   let shapeTuple = @@procedureName()
@@ -170,6 +189,19 @@ localShapeJson = %* []
             "y3": `y3`
           })
           localShapeJson.add(triangleJson)
+      of "circle":
+        let
+          x = sentence[1].floatVal.float
+          y = sentence[2].floatVal.float
+          r = sentence[3].floatVal.float
+        result.add quote do:
+          var circleJson = (%* {
+            "func": "circle",
+            "x": `x`,
+            "y": `y`,
+            "r": `r`
+          })
+          localShapeJson.add(circleJson)
   result.add quote do:
     virtualCanvas["shapes"].add(`macroNameStr`, localShapeJson)
   result.add quote do:
