@@ -37,7 +37,7 @@ macro Blackvas*(body: untyped): untyped =
   ##  * window.addEventListener ("load", ...)
   ##    * HTML要素が読み込まれた時、Canvasを作成し、contextなどを変数に代入します。
   result = """
-import json, strutils, math, dom, tables
+import json, strutils, math, dom, tables, macros
 var
   canvas*: Canvas
   context*: CanvasContext2d

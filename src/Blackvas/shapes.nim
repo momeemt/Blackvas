@@ -17,7 +17,6 @@ macro shapes* (body: untyped): untyped =
   # clickEventProcJson
   # 各クリックイベントの処理を格納し、最後にProc NimNodeに変換するための一時変数
   result.add """
-import macros, dom
 var
   clickEventProcSeq: seq[tuple[name: string, node: NimNode]]
   localShapeJson = %* []
@@ -29,9 +28,6 @@ type VasContext* = object
   y: float
 """.parseStmt
   result.add quote do:
-    
-    import macros, strutils
-
     proc getVasContext(shapeInstanceName: string): VasContext =
       var
         shapeId = ""
@@ -59,7 +55,8 @@ type VasContext* = object
       let restructedShapeJson = virtualCanvas["virtual_canvas"][shapeInstanceName]
       restructedShapeJson["x"] = newJFloat(vasContext.x)
       restructedShapeJson["y"] = newJFloat(vasContext.y)
-      restructedShapeJson["id"] = newJString(vasContext.shapeId)
+      if not (vasContext.shapeId == ""):
+        restructedShapeJson["id"] = newJString(vasContext.shapeId)
       
     proc getShapeProcNimNode (shape: string): NimNode =
       result = newNimNode(nnkBlockStmt).add(
@@ -112,7 +109,6 @@ type VasContext* = object
           }).pretty
 
       result = quote("@@") do:
-        import json
         window.addEventListener("load",
           proc(event: Event) =
             var canvas: Canvas
@@ -129,7 +125,6 @@ type VasContext* = object
             canvas.addEventListener("click", 
               proc (event: Blackvas.Event) =
                 let shapeInstance = virtualCanvas["virtual_canvas"][@@shapeInstanceName]
-                echo shapeInstance.pretty
                 var
                   # Shapeの基準座標
                   baseShapeX = 0.0
@@ -206,7 +201,6 @@ proc getNoArgumentShapeMacro (macroName, body: NimNode): NimNode =
   macroName.expectKind(nnkIdent)
   let shape = getShape(body)
   result = quote do:
-    import macros
     macro `macroName`* () =
       result.add getShapeProcNimNode(`shape`)
 
@@ -268,7 +262,6 @@ localShapeJson = %* []
   result.add quote do:
     virtualCanvas["shapes"].add(`macroNameStr`, localShapeJson)
   result.add quote do:
-    import macros
     macro `macroName`* (body: untyped) =
       result = quote do:
         discard # 何故か下の文だけでコンパイルするとエラーになる...
@@ -291,20 +284,27 @@ localShapeJson = %* []
           let attributeName = sentence[0].repr
           let attributeValueKind = sentence[1].kind
           let attributeValue = sentence[1].repr
-          if attributeValueKind == nnkStrLit:
-            if attributeName == "class" or attributeName == "id":
-              var trimmedAttributeValue = attributeValue[1..attributeValue.len-2]
+          if attributeName == "id":
+            if attributeValueKind == nnkStrLit:
+              var
+                attributeValueStr = sentence[1].strVal
+                # trimmedAttributeValue = attributeValueStr[1..attributeValueStr.len-2]
+              # echo trimmedAttributeValue
               result.add quote("@@") do:
-                shapeJson[@@attributeName] = newJString @@attributeValue
-            else:
-              error("Undefined attributes", sentence[0])
-
-          elif attributeValueKind == nnkIdent:
-            # 変数が与えられたとき
-            let attributeName = sentence[0].repr
-            let attributeValueNimNode = sentence[1]
-            result.add quote("@@") do:
-              shapeJson[@@attributeName] = newJString(@@attributeValueNimNode)
+                shapeJson["id"] = newJString @@attributeValueStr
+            elif attributeValueKind == nnkIdent:
+              # 変数が与えられたとき
+              let attributeValueNimNode = sentence[1]
+              result.add quote("@@") do:
+                shapeJson["id"] = newJString @@attributeValueNimNode
+          elif attributeName == "x":
+            if attributeValueKind == nnkFloatLit:
+              result.add quote("@@") do:
+                shapeJson["x"] = newJFloat @@attributeValue.parseFloat
+            elif attributeValueKind == nnkIdent:
+              let attributeValueNimNode = sentence[1]
+              result.add quote("@@") do:
+                shapeJson["x"] = newJFloat @@attributeValueNimNode
           else:
             error("Undefined attributes", sentence[0])
         else:
