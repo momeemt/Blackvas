@@ -47,7 +47,7 @@ var
   result.add quote do:
     proc removeDoubleQuotation(str: string): string =
       result = str[1..str.len-2]
-    proc drawShape (context: CanvasContext2d, shapesArr: JsonNode) =
+    proc drawShape (context: CanvasContext2d, shapesArr: JsonNode, baseX: float, baseY: float) =
       for obj in shapesArr:
         let rawObjFunc = obj["func"].pretty
         let objFunc = rawObjFunc[1..rawObjFunc.len-2]
@@ -57,8 +57,8 @@ var
           context.fillStyle = color
         of "rect":
           let
-            x = obj["x"].pretty.parseFloat
-            y = obj["y"].pretty.parseFloat
+            x = obj["x"].pretty.parseFloat + baseX
+            y = obj["y"].pretty.parseFloat + baseY
             width = obj["width"].pretty.parseFloat
             height = obj["height"].pretty.parseFloat
           context.beginPath()
@@ -67,18 +67,18 @@ var
         of "text":
           let
             value = removeDoubleQuotation(obj["value"].pretty)
-            x = obj["x"].pretty.parseFloat
-            y = obj["y"].pretty.parseFloat
+            x = obj["x"].pretty.parseFloat + baseX
+            y = obj["y"].pretty.parseFloat + baseY
           context.strokeText(value, x, y)
           context.fillText(value, x, y)
         of "triangle":
           let
-            v1x = obj["x1"].pretty.parseFloat
-            v1y = obj["y1"].pretty.parseFloat
-            v2x = obj["x2"].pretty.parseFloat
-            v2y = obj["y2"].pretty.parseFloat
-            v3x = obj["x3"].pretty.parseFloat
-            v3y = obj["y3"].pretty.parseFloat
+            v1x = obj["x1"].pretty.parseFloat + baseX
+            v1y = obj["y1"].pretty.parseFloat + baseY
+            v2x = obj["x2"].pretty.parseFloat + baseX
+            v2y = obj["y2"].pretty.parseFloat + baseY
+            v3x = obj["x3"].pretty.parseFloat + baseX
+            v3y = obj["y3"].pretty.parseFloat + baseY
           context.beginPath()
           context.moveTo(v1x, v1y)
           context.lineTo(v2x, v2y)
@@ -86,8 +86,8 @@ var
           context.fill()
         of "circle":
           let
-            x = obj["x"].pretty.parseFloat
-            y = obj["y"].pretty.parseFloat
+            x = obj["x"].pretty.parseFloat + baseX
+            y = obj["y"].pretty.parseFloat + baseY
             r = obj["r"].pretty.parseFloat
           context.beginPath()
           context.arc(x, y, r, 0, 2 * math.PI)
@@ -105,10 +105,16 @@ var
         var
           idName = ""
           className = ""
+          baseX = 0.0
+          baseY = 0.0
         if item.val.hasKey("id"):
           idName = "#" & removeDoubleQuotation(item.val["id"].pretty)
         if item.val.hasKey("class"):
           className = "." & removeDoubleQuotation(item.val["class"].pretty)
+        if item.val.hasKey("x"):
+          baseX = item.val["x"].getFloat.float
+        if item.val.hasKey("y"):
+          baseY = item.val["y"].getFloat.float
         context.font = "24px Arial"
         context.fillStyle = "#000000"
         context.textAlign = "start"
@@ -121,7 +127,7 @@ var
           case style:
           of "color":
             context.fillStyle = value
-        drawShape(context, shapeArray)
+        drawShape(context, shapeArray, baseX, baseY)
 
     window.addEventListener("load",
       proc (event: Event) =

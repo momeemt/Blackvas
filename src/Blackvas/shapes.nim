@@ -43,6 +43,16 @@ var
           shape.parseStmt
         )
       )
+    
+    proc getAddAnimation (procedureName: NimNode, shape: string, shapeInstanceName: string): NimNode =
+      echo shapeInstanceName
+      result = quote("@@") do:
+        discard window.setInterval(
+          proc () =
+            let shapeTuple = @@procedureName()
+            restructJson(@@shapeInstanceName, shapeTuple[0], shapeTuple[1])
+            draw(context)
+        , 20)
 
     proc getAddListenerClickEvent (procedureName: NimNode, shape: string, shapeInstanceName: string): NimNode =
       let shapeNimNode = shape.parseStmt
@@ -220,6 +230,8 @@ localShapeJson = %* []
           case eventName:
           of "click":
             result.add getAddListenerClickEvent(procedureNameUntype, `shape`, `shapeInstanceName`)
+          of "animation":
+            result.add getAddAnimation(procedureNameUntype, `shape`, `shapeInstanceName`)
           else:
             discard
         elif sentenceKind == nnkIdent:
