@@ -70,7 +70,6 @@ type VasContext* = object
       )
     
     proc getAddAnimation (procedureName: NimNode, shape: string, shapeInstanceName: string): NimNode =
-      echo shapeInstanceName
       result = quote("@@") do:
         discard window.setInterval(
           proc () =
@@ -129,8 +128,19 @@ type VasContext* = object
             let context = canvas.getContext2d()
             canvas.addEventListener("click", 
               proc (event: Blackvas.Event) =
+                let shapeInstance = virtualCanvas["virtual_canvas"][@@shapeInstanceName]
+                echo shapeInstance.pretty
+                var
+                  # Shapeの基準座標
+                  baseShapeX = 0.0
+                  baseShapeY = 0.0
+                if shapeInstance.hasKey("x"):
+                  baseShapeX = shapeInstance["x"].getFloat
+                if shapeInstance.hasKey("y"):
+                  baseShapeY = shapeInstance["y"].getFloat
                 let
                   canvasRect = canvas.getBoundingClientRect()
+                  # click時のCanvas内における基準座標
                   basePointX = event.clientX - canvasRect.left
                   basePointY = event.clientY - canvasRect.top
                 var isClick = false
@@ -143,23 +153,39 @@ type VasContext* = object
                     kind = rawKind[1..rawKind.len-2]
                   case kind:
                   of "rect":
-                    let intoCond1 = shape["x"].getFloat <= basePointX and shape["y"].getFloat <= basePointY
-                    let intoCond2 = (shape["x"].getFloat + shape["width"].getFloat) >= basePointX and (shape["y"].getFloat + shape["height"].getFloat) >= basePointY
+                    let
+                      x = shape["x"].getFloat + baseShapeX
+                      y = shape["y"].getFloat + baseShapeY
+                      width = shape["width"].getFloat
+                      height = shape["height"].getFloat
+                      intoCond1 = x <= basePointX and y <= basePointY
+                      intoCond2 = (x + width) >= basePointX and (y + height) >= basePointY
                     if intoCond1 and intoCond2:
                       isClick = true
                   
                   of "triangle":
                     # ベクトル係数を計算して三角形内にクリック座標が含まれているか
-                    let area = 0.5 * (-shape["y2"].getFloat * shape["x3"].getFloat + shape["y1"].getFloat * (-shape["x2"].getFloat + shape["x3"].getFloat) + shape["x1"].getFloat * (shape["y2"].getFloat - shape["y3"].getFloat) + shape["x2"].getFloat * shape["y3"].getFloat)
-                    let sScala = 1 / (2 * area) * (shape["y1"].getFloat * shape["x3"].getFloat - shape["x1"].getFloat * shape["y3"].getFloat + (shape["y3"].getFloat - shape["y1"].getFloat) * basePointX + (shape["x1"].getFloat - shape["x3"].getFloat) * basePointY)
-                    let tScala = 1 / (2 * area) * (shape["x1"].getFloat * shape["y2"].getFloat - shape["y1"].getFloat * shape["x2"].getFloat + (shape["y1"].getFloat - shape["y2"].getFloat) * basePointX + (shape["x2"].getFloat - shape["x1"].getFloat) * basePointY)
-                    let scalaDiff = 1 - sScala - tScala
+                    let
+                      x1 = shape["x1"].getFloat + baseShapeX
+                      y1 = shape["y1"].getFloat + baseShapeY
+                      x2 = shape["x2"].getFloat + baseShapeX
+                      y2 = shape["y2"].getFloat + baseShapeY
+                      x3 = shape["x3"].getFloat + baseShapeX
+                      y3 = shape["y3"].getFloat + baseShapeY
+                      area = 0.5 * (-y2 * x3 + y1 * (-x2 + x3) + x1 * (y2 - y3) + x2 * y3)
+                      sScala = 1 / (2 * area) * (y1 * x3 - x1 * y3 + (y3 - y1) * basePointX + (x1 - x3) * basePointY)
+                      tScala = 1 / (2 * area) * (x1 * y2 - y1 * x2 + (y1 - y2) * basePointX + (x2 - x1) * basePointY)
+                      scalaDiff = 1 - sScala - tScala
                     if (0 < sScala and sScala < 1) and (0 < tScala and tScala < 1) and (0 < scalaDiff and scalaDiff < 1):
                       isClick = true
                   
                   of "circle":
-                    let pointDistanceSquare = (shape["x"].getFloat - basePointX) ^ 2 + (shape["y"].getFloat - basePointY) ^ 2
-                    if pointDistanceSquare <= shape["r"].getFloat ^ 2:
+                    let
+                      x = shape["x"].getFloat + baseShapeX
+                      y = shape["y"].getFloat + baseShapeY
+                      r = shape["r"].getFloat
+                      pointDistanceSquare = (x - basePointX) ^ 2 + (y - basePointY) ^ 2
+                    if pointDistanceSquare <= r ^ 2:
                       isClick = true
                 if isClick:
                   var vasContext = getVasContext(@@shapeInstanceName)
