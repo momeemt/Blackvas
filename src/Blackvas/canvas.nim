@@ -9,7 +9,7 @@ type
     target*: Node
     altKey*, ctrlKey*, shiftKey*: bool
     button*: int
-    clientX*, clientY*: int
+    clientX*, clientY*: float
     keyCode*: int
     layerX*, layerY*: int
     modifiers*: int

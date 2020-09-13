@@ -2,7 +2,10 @@
 ## 
 ## 仮想Canvas (virtualCanvas) をHTMLに反映する機能を備えます。
 
-include Blackvas/[settings, view, methods, canvas, data, color, style, shapes]
+include Blackvas/[types, settings, view, methods, canvas, data, color, style, shapes]
+
+const
+  Debug* = true
 
 macro Blackvas*(body: untyped): untyped =
   ## Blackvasプロジェクトであることを示す文です。
@@ -42,20 +45,20 @@ var
   virtualCanvas* = %* { "virtual_canvas": {}, "shapes": {}, "styles": {} }
 """.parseStmt
   result.add quote do:
-    proc drawShape (context: CanvasContext2d, shapesArr: JsonNode) =
+    proc removeDoubleQuotation(str: string): string =
+      result = str[1..str.len-2]
+    proc drawShape (context: CanvasContext2d, shapesArr: JsonNode, baseX: float, baseY: float) =
       for obj in shapesArr:
         let rawObjFunc = obj["func"].pretty
         let objFunc = rawObjFunc[1..rawObjFunc.len-2]
         case objFunc:
         of "style_color":
-          let
-            rawColor = obj["color"].pretty
-            color = rawColor[1..rawColor.len-2]
+          let color = removeDoubleQuotation(obj["color"].pretty)
           context.fillStyle = color
         of "rect":
           let
-            x = obj["x"].pretty.parseFloat
-            y = obj["y"].pretty.parseFloat
+            x = obj["x"].pretty.parseFloat + baseX
+            y = obj["y"].pretty.parseFloat + baseY
             width = obj["width"].pretty.parseFloat
             height = obj["height"].pretty.parseFloat
           context.beginPath()
@@ -63,20 +66,19 @@ var
           context.fill()
         of "text":
           let
-            rawValue = obj["value"].pretty
-            value = rawValue[1..rawValue.len-2]
-            x = obj["x"].pretty.parseFloat
-            y = obj["y"].pretty.parseFloat
+            value = removeDoubleQuotation(obj["value"].pretty)
+            x = obj["x"].pretty.parseFloat + baseX
+            y = obj["y"].pretty.parseFloat + baseY
           context.strokeText(value, x, y)
           context.fillText(value, x, y)
         of "triangle":
           let
-            v1x = obj["v1x"].pretty.parseFloat
-            v1y = obj["v1y"].pretty.parseFloat
-            v2x = obj["v2x"].pretty.parseFloat
-            v2y = obj["v2y"].pretty.parseFloat
-            v3x = obj["v3x"].pretty.parseFloat
-            v3y = obj["v3y"].pretty.parseFloat
+            v1x = obj["x1"].pretty.parseFloat + baseX
+            v1y = obj["y1"].pretty.parseFloat + baseY
+            v2x = obj["x2"].pretty.parseFloat + baseX
+            v2y = obj["y2"].pretty.parseFloat + baseY
+            v3x = obj["x3"].pretty.parseFloat + baseX
+            v3y = obj["y3"].pretty.parseFloat + baseY
           context.beginPath()
           context.moveTo(v1x, v1y)
           context.lineTo(v2x, v2y)
@@ -84,8 +86,8 @@ var
           context.fill()
         of "circle":
           let
-            x = obj["x"].pretty.parseFloat
-            y = obj["y"].pretty.parseFloat
+            x = obj["x"].pretty.parseFloat + baseX
+            y = obj["y"].pretty.parseFloat + baseY
             r = obj["r"].pretty.parseFloat
           context.beginPath()
           context.arc(x, y, r, 0, 2 * math.PI)
@@ -99,17 +101,20 @@ var
       for item in virtualCanvasObjects.pairs:
         if not item.val.hasKey("shape"):
           continue
-        let
-          rawShapeName = item.val["shape"].pretty
-          shapeName = rawShapeName[1..rawShapeName.len-2]
+        let shapeName = removeDoubleQuotation(item.val["shape"].pretty)
         var
-          rawIdName = ""
-          rawClassName = ""
           idName = ""
           className = ""
+          baseX = 0.0
+          baseY = 0.0
         if item.val.hasKey("id"):
-          rawIdName = item.val["id"].pretty
-          idName = "#" & rawIdName[1..rawIdName.len-2]
+          idName = "#" & removeDoubleQuotation(item.val["id"].pretty)
+        if item.val.hasKey("class"):
+          className = "." & removeDoubleQuotation(item.val["class"].pretty)
+        if item.val.hasKey("x"):
+          baseX = item.val["x"].getFloat.float
+        if item.val.hasKey("y"):
+          baseY = item.val["y"].getFloat.float
         context.font = "24px Arial"
         context.fillStyle = "#000000"
         context.textAlign = "start"
@@ -117,30 +122,29 @@ var
         let styleArrayById = styleObjects[idName]
         for obj in styleArrayById:
           let
-            rawStyle = obj["style"].pretty
-            style = rawStyle[1..rawStyle.len-2]
-            rawValue = obj["value"].pretty
-            value = rawValue[1..rawValue.len-2]
+            style = removeDoubleQuotation(obj["style"].pretty)
+            value = removeDoubleQuotation(obj["value"].pretty)
           case style:
           of "color":
             context.fillStyle = value
-        drawShape(context, shapeArray)
+        drawShape(context, shapeArray, baseX, baseY)
 
     window.addEventListener("load",
       proc (event: Event) =
-        if document.getElementById("myCanvas") == nil:
+        if document.getElementById(canvasId) == nil:
           let blackvas = document.getElementById("Blackvas")
           canvas = dom.document.createElement("canvas").Canvas
-          canvas.id = "myCanvas"
-          canvas.height = 1000
-          canvas.width = 1000
+          canvas.id = canvasId
+          canvas.height = height
+          canvas.width = width
           blackvas.appendChild(canvas)
         else:
-          canvas = document.getElementById("myCanvas").Canvas
+          canvas = document.getElementById(canvasId).Canvas
         
         context = canvas.getContext2d()
 
-        echo pretty virtualCanvas
+        when Debug:
+          echo pretty virtualCanvas
         draw(context)
         echo "Hello, Blackvas ;)"
     )
