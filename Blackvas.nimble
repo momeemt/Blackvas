@@ -5,9 +5,13 @@ author        = "Momeemt"
 description   = "declarative UI framework for building Canvas"
 license       = "MIT"
 srcDir        = "src"
-
-backend       = "js"
+skipDirs      = @["cli"]
+bin           = @["cli/blackvas_cli"]
+binDir        = "src/bin"
+installExt    = @["nim"]
+backend       = "c"
 
 # Dependencies
 
-requires "nim >= 1.0.6"
+requires "nim >= 1.2.6"
+requires "cligen >= 1.2.0"
