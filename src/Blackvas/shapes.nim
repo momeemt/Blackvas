@@ -50,14 +50,14 @@ type VasContext* = object
     proc restructJson(shapeInstanceName: string, kind: string, value: float) =
       let restructedShapeJson = virtualCanvas["virtual_canvas"][shapeInstanceName]
       restructedShapeJson[kind] = newJFloat(value)
-    
+
     proc restructJson(shapeInstanceName: string, vasContext: VasContext) =
       let restructedShapeJson = virtualCanvas["virtual_canvas"][shapeInstanceName]
       restructedShapeJson["x"] = newJFloat(vasContext.x)
       restructedShapeJson["y"] = newJFloat(vasContext.y)
       if not (vasContext.shapeId == ""):
         restructedShapeJson["id"] = newJString(vasContext.shapeId)
-      
+    
     proc getShapeProcNimNode (shape: string): NimNode =
       result = newNimNode(nnkBlockStmt).add(
         ident("shapeProcBlock"),
@@ -122,7 +122,7 @@ type VasContext* = object
             else:
               canvas = document.getElementById(canvasId).Canvas
             let context = canvas.getContext2d()
-            canvas.addEventListener("click", 
+            canvas.addEventListener("click",
               proc (event: Blackvas.Event) =
                 let shapeInstance = virtualCanvas["virtual_canvas"][@@shapeInstanceName]
                 var
@@ -157,7 +157,7 @@ type VasContext* = object
                       intoCond2 = (x + width) >= basePointX and (y + height) >= basePointY
                     if intoCond1 and intoCond2:
                       isClick = true
-                  
+
                   of "triangle":
                     # ベクトル係数を計算して三角形内にクリック座標が含まれているか
                     let
@@ -173,7 +173,7 @@ type VasContext* = object
                       scalaDiff = 1 - sScala - tScala
                     if (0 < sScala and sScala < 1) and (0 < tScala and tScala < 1) and (0 < scalaDiff and scalaDiff < 1):
                       isClick = true
-                  
+
                   of "circle":
                     let
                       x = shape["x"].getFloat + baseShapeX
